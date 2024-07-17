@@ -5,6 +5,20 @@ This project will help easily add to your game backlog
 
 # README IS A WORK IN PROGRESS
 
+## Notion Setup
+
+1. Create a notion account at https://www.notion.so/signup
+
+2. Create a copy of the Video Game Backlog Tracker at https://www.notion.so/templates/video-game-tracker
+
+3. Create a new integration at https://www.notion.so/profile/integrations
+
+4. Allow the integration to Read, Update, and Insert Content
+
+5. Take note of the Internal Integration Secret Key for later
+
+6. Go back to your copy of the Video Game Backlog Tracker and Add a new Connection to your previously created integration
+
 ## Installation
 1. Clone this repository:
 

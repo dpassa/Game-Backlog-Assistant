@@ -35,16 +35,20 @@ pip install -r requirements.txt
 ### Not sure how to find an environment variable look below 
 
 <details>
-    <summary>Finding Your Notion Token</summary>
-    ### You can add a header
+  <summary>Click me</summary>
+  
+  ### Heading
+  1. Foo
+  2. Bar
+     * Baz
+     * Qux
 
-    You can add text within a collapsed section. 
-
-    You can add an image or a code block, too.
-
-    ```ruby
-    puts "Hello World"
-    ```
+  ### Some Javascript
+  ```js
+  function logSomething(something) {
+    console.log('Something', something);
+  }
+  ```
 </details>
 
 <details>

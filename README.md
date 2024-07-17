@@ -21,13 +21,6 @@ This project will help easily add to your game backlog
 
 ![Alt text](/images/Connection.png)
 
-
-
-```py
-    
-```
-</details>
-
 ## Installation
 1. Clone this repository:
 

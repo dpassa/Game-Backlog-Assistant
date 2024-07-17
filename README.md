@@ -32,60 +32,42 @@ pip install -r requirements.txt
 }
 ```
 
-### Not sure how to find an environment variable look below 
+## Not sure how to find an environment variable look below 
 
-<details>
-  <summary>Click me</summary>
-  
-  ### Heading
-  1. Foo
-  2. Bar
-     * Baz
-     * Qux
-
-  ### Some Javascript
-  ```js
-  function logSomething(something) {
-    console.log('Something', something);
-  }
-  ```
-</details>
-
-<details>
 <summary>Finding Your Notion Page ID</summary>
 
 ### Ur Cooked Mate
 
 ```py
-    os.delete()
+    
 ```
 </details>
 
 <details>
-    <summary>Finding Your Notion Database ID</summary>
+<summary>Finding Your Notion Database ID</summary>
 
 
-    ```
+```
 
-    ```
+```
 </details>
 
 <details>
-    <summary>Finding Your IGDB Client ID</summary>
+<summary>Finding Your IGDB Client ID</summary>
 
 
-    ```
+```
 a
-    ```
+```
 </details>
 
 <details>
-    <summary>Finding Your IGDB Secret Token</summary>
+<summary>Finding Your IGDB Secret Token</summary>
 
 
-    ```
+```
 a
-    ```
+```
 </details>
 
 ## Usage

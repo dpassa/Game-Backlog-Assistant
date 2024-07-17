@@ -1,6 +1,10 @@
 # Game Backlog Assistant
 
-This project will help easily add to your game backlog
+This program will help you easily add to and manage your gaming backlog via helpful tools and easy UI. Using this program you can enter the name of a game and get the Amount of time to complete, genres, release date, platforms, and more of the game. Addionitally the program will add it to a notion database to help you more easily manage it with easy and clean UI.
+
+![Alt text](/images/example1.png)
+
+![Alt text](/images/example2.png)
 
 ## Notion Setup
 

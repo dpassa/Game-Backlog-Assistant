@@ -52,13 +52,13 @@ pip install -r requirements.txt
 </details>
 
 <details>
-    <summary>Finding Your Notion Page ID</summary>
+<summary>Finding Your Notion Page ID</summary>
 
-    ### Ur Cooked Mate
+### Ur Cooked Mate
 
-    ```py
-        os.delete()
-    ```
+```py
+    os.delete()
+```
 </details>
 
 <details>

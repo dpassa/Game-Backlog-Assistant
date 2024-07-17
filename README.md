@@ -73,7 +73,6 @@ You can find your Client ID under the settings for the integretion you created w
 <details>
 <summary>Finding Your Notion Page ID</summary>
 
-### Ur Cooked Mate
 
 ```py
     

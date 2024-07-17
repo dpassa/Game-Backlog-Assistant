@@ -49,6 +49,16 @@ pip install -r requirements.txt
 ### Not sure how to find an environment variable look below 
 
 <details>
+<summary>Finding Your Notion Client ID</summary>
+
+![Alt text](/images/Integration_Secret_Key.png)
+
+```py
+    
+```
+</details>
+
+<details>
 <summary>Finding Your Notion Page ID</summary>
 
 ### Ur Cooked Mate
@@ -69,8 +79,6 @@ pip install -r requirements.txt
 
 <details>
 <summary>Finding Your IGDB Client ID</summary>
-
-![Alt text](/images/Integration_Secret_Key.png)
 
 ```
 a

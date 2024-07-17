@@ -49,8 +49,7 @@ pip install -r requirements.txt
 - Example:
 ```
 {
-    "notion_token" : "YourNotionToken",
-    "notion_page_id" : "Notion_Page_ID",
+    "notion_token" : "YourNotionToken",    
     "notion_database_id" : "Notion_Database_ID",
     "IGDB_clientID" : "IGDB_ClientID",
     "IGDB_secret" : "IGDB_Secret"
@@ -68,15 +67,6 @@ You can find your Client ID under the settings for the integretion you created w
 
 ![Alt text](/images/Integration_Secret_Key_Referenece1.png)
 
-</details>
-
-<details>
-<summary>Finding Your Notion Page ID</summary>
-
-
-```py
-    
-```
 </details>
 
 <details>

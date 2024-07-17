@@ -141,3 +141,12 @@ Game Added to Database
 ```
 
 After adding a game to the database the program will delete the title from the games.txt file
+
+**Note: Spelling and Capitalization Matters**
+The program will not be able to find games that are misspelled or misscapitalized
+:x: Ghost of Sushima
+:x: Ghost **O**f Tsushima
+:white_check_mark: Ghost of Tsushima
+
+## Thank you And Enjoy
+If you have any questions or issues feel free to ask for help

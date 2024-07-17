@@ -53,8 +53,6 @@ pip install -r requirements.txt
 
 ### Ur Cooked Mate
 
-![Alt text](/images/Integration_Secret_Key.png)
-
 ```py
     
 ```
@@ -72,6 +70,7 @@ pip install -r requirements.txt
 <details>
 <summary>Finding Your IGDB Client ID</summary>
 
+![Alt text](/images/Integration_Secret_Key.png)
 
 ```
 a

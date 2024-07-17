@@ -72,6 +72,13 @@ You can find your Client ID under the settings for the integretion you created w
 <details>
 <summary>Finding Your Notion Database ID</summary>
 
+You can find you notion database id by first getting the database link. You can copy the database link by clicking on the ... and then "Copy link to Table"
+
+![Alt text](/images/Notion_Link.png)
+
+After getting the link copy the numbers and letters after www.notion.so/ and before ?v=
+
+https://www.notion.so/**453a0a7fd9e347b6b1ebe69f9332f7e7**?v=67d6d5201d3541b98b87226188300fef&pvs=4
 
 ```
 

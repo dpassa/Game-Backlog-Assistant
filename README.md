@@ -80,9 +80,6 @@ After getting the link copy the numbers and letters after www.notion.so/ and bef
 
 Example: www.notion.so/ <u>**453a0a7fd9e347b6b1ebe69f9332f7e7**<u> ?v=67d6d5201d3541b98b87226188300fef&pvs=4
 
-```
-
-```
 </details>
 
 <details>

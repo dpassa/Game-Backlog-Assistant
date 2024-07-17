@@ -36,10 +36,14 @@ pip install -r requirements.txt
 
 <details>
     <summary>Finding Your Notion Token</summary>
+    ### You can add a header
 
+    You can add text within a collapsed section. 
 
-    ```
-a
+    You can add an image or a code block, too.
+
+    ```ruby
+    puts "Hello World"
     ```
 </details>
 

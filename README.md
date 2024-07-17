@@ -55,7 +55,7 @@ You can find your Client ID under the settings for the integretion you created w
 
 > Integration link: https://www.notion.so/profile/integrations
 
-![Alt text](/images/Integration_Secret_Key_Referenece.png)
+![Alt text](/images/Integration_Secret_Key_Referenece1.png)
 
 ```py
     

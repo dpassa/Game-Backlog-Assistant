@@ -19,7 +19,7 @@ This project will help easily add to your game backlog
 
 6. Go back to your copy of the Video Game Backlog Tracker and Add a new Connection to your previously created integration
 
-- ![Alt text](/images/Connection.png)
+![Alt text](/images/Connection.png)
 
 
 

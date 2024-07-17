@@ -31,11 +31,14 @@ pip install -r requirements.txt
     "IGDB_secret" : "IGDB_Secret"
 }
 ```
+</details>
+<summary>Finding Your Notion Token</summary>
 ### Finding your Notion Token
 
 ```
 
 ```
+</details>
 
 ### Finding your Notion Page ID
 

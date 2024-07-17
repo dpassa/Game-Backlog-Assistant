@@ -1,5 +1,3 @@
-# README IS A WORK IN PROGRESS
-
 # Game Backlog Assistant
 
 This project will help easily add to your game backlog

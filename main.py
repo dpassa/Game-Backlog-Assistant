@@ -160,10 +160,13 @@ def main():
     else:
         lines = list()
         with open('./games.txt', 'r') as fd:
-            games = fd.read().format().split('\n')   
-            lines = fd.readlines()         
+            games = fd.read().format().split('\n')               
             fd.close()
 
+        with open('./games.txt', 'r') as fd:
+            lines = fd.readlines()         
+            fd.close()
+            
         count = 0
         for game in games:
             fail = write_game(client, game)   

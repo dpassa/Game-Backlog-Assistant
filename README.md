@@ -1,9 +1,8 @@
+# README IS A WORK IN PROGRESS
 
 # Game Backlog Assistant
 
 This project will help easily add to your game backlog
-
-# README IS A WORK IN PROGRESS
 
 ## Notion Setup
 
@@ -20,6 +19,16 @@ This project will help easily add to your game backlog
 6. Go back to your copy of the Video Game Backlog Tracker and Add a new Connection to your previously created integration
 
 ![Alt text](/images/Connection.png)
+
+## IGDB Setup
+
+1. Go to https://api-docs.igdb.com/#getting-started and follow the sets to create an account
+
+2. Go to https://dev.twitch.tv/console/apps and create a new application
+
+![Alt text](/images/IGDB.png)
+
+3. Manage that application and take note of the Client ID and Client Secret for later use
 
 ## Installation
 1. Clone this repository:
@@ -55,13 +64,10 @@ pip install -r requirements.txt
 
 You can find your Client ID under the settings for the integretion you created while setting up notion
 
-> Integration link: https://www.notion.so/profile/integrations
+> Integrations link: https://www.notion.so/profile/integrations
 
 ![Alt text](/images/Integration_Secret_Key_Referenece1.png)
 
-```py
-    
-```
 </details>
 
 <details>
@@ -84,21 +90,17 @@ You can find your Client ID under the settings for the integretion you created w
 </details>
 
 <details>
-<summary>Finding Your IGDB Client ID</summary>
+<summary>Finding Your IGDB Client ID and Secret Token</summary>
 
-```
-a
-```
+You can find you IGDB Client ID and Secret if you manage your Twitch Application you created when setting up IGDB
+
+> Twitch Applications Link: https://dev.twitch.tv/console/apps 
+
+![Alt text](/images/IGBD_Manage.png)
+
 </details>
 
 <details>
-<summary>Finding Your IGDB Secret Token</summary>
-
-
-```
-a
-```
-</details>
 
 ## Usage
 

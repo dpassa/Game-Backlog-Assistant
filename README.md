@@ -96,11 +96,9 @@ You can find you IGDB Client ID and Secret if you manage your Twitch Application
 
 > Twitch Applications Link: https://dev.twitch.tv/console/apps 
 
-![Alt text](/images/IGBD_Manage.png)
+![Alt text](/images/IGDB_Manage.png)
 
 </details>
-
-<details>
 
 ## Usage
 

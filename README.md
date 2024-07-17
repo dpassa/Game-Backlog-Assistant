@@ -17,7 +17,15 @@ This project will help easily add to your game backlog
 
 5. Take note of the Internal Integration Secret Key for later
 
-6. Go back to your copy of the Video Game Backlog Tracker and Add a new Connection to your previously created integration
+<details>
+<summary>6. Go back to your copy of the Video Game Backlog Tracker and Add a new Connection to your previously created integration</summary>
+
+
+
+```py
+    
+```
+</details>
 
 ## Installation
 1. Clone this repository:

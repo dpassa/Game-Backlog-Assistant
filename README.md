@@ -78,7 +78,7 @@ You can find you notion database id by first getting the database link. You can 
 
 After getting the link copy the numbers and letters after www.notion.so/ and before ?v=
 
-Example: www.notion.so/**453a0a7fd9e347b6b1ebe69f9332f7e7**?v=67d6d5201d3541b98b87226188300fef&pvs=4
+Example: www.notion.so/ **453a0a7fd9e347b6b1ebe69f9332f7e7** ?v=67d6d5201d3541b98b87226188300fef&pvs=4
 
 ```
 

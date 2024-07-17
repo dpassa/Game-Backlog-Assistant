@@ -10,7 +10,7 @@ This program will help you easily add to and manage your gaming backlog via help
 
 1. Create a notion account at https://www.notion.so/signup
 
-2. Create a copy of the Video Game Backlog Tracker at https://www.notion.so/templates/video-game-tracker
+2. Create a copy of the Video Game Backlog Tracker at https://www.notion.so/templates/videogame-backlog-tracker
 
 3. Create a new integration at https://www.notion.so/profile/integrations
 

@@ -34,6 +34,7 @@ pip install -r requirements.txt
 
 ## Not sure how to find an environment variable look below 
 
+<details>
 <summary>Finding Your Notion Page ID</summary>
 
 ### Ur Cooked Mate

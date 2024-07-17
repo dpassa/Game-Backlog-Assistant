@@ -51,7 +51,7 @@ pip install -r requirements.txt
 <details>
 <summary>Finding Your Notion Client ID</summary>
 
-![Alt text](/images/Integration_Secret_Key.png)
+![Alt text](/images/Integration_Secret_Key_Referenece.png)
 
 ```py
     

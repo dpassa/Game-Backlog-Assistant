@@ -31,8 +31,29 @@ pip install -r requirements.txt
     "IGDB_secret" : "IGDB_Secret"
 }
 ```
+
+### Not sure how to find an environment variable look below \/
+
 <details>
-    <summary>**Finding Your Notion Token**</summary>
+    <summary>Finding Your Notion Token</summary>
+
+
+    ```
+a
+    ```
+</details>
+
+<details>
+    <summary>Finding Your Notion Page ID</summary>
+
+
+    ```
+a
+    ```
+</details>
+
+<details>
+    <summary>Finding Your Notion Database ID</summary>
 
 
     ```
@@ -41,38 +62,20 @@ pip install -r requirements.txt
 </details>
 
 <details>
-    <summary>**Finding Your Notion Page ID**</summary>
+    <summary>Finding Your IGDB Client ID</summary>
 
 
     ```
-
-    ```
-</details>
-
-<details>
-    <summary>**Finding Your Notion Database ID**</summary>
-
-
-    ```
-
+a
     ```
 </details>
 
 <details>
-    <summary>**Finding Your IGDB Client ID**</summary>
+    <summary>Finding Your IGDB Secret Token</summary>
 
 
     ```
-
-    ```
-</details>
-
-<details>
-    <summary>**Finding Your IGDB Secret Token**</summary>
-
-
-    ```
-
+a
     ```
 </details>
 

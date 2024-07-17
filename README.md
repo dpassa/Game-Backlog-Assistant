@@ -51,6 +51,10 @@ pip install -r requirements.txt
 <details>
 <summary>Finding Your Notion Client ID</summary>
 
+You can find your Client ID under the settings for the integretion you created while setting up notion
+
+> Integration link: https://www.notion.so/profile/integrations
+
 ![Alt text](/images/Integration_Secret_Key_Referenece.png)
 
 ```py

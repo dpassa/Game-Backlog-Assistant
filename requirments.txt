@@ -1,0 +1,1 @@
+pip install notion_client, IGDB, requests, json, datetime

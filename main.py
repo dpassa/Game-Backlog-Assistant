@@ -2,6 +2,7 @@ from notion_client import Client
 from IGDB import *
 from getCompeletionTime import getTimeToCompelete
 import json
+import os
 
 with open('./secrets.json', 'r') as fd:
     secrets = json.load(fd)
@@ -158,6 +159,20 @@ def main():
         title = input('Game title: ')
         write_game(client, title, True)        
     else:
+        if (not os.path.exists('./games.txt')):
+            with open('./games.txt', 'w') as fd:
+                fd.close()
+            
+            print("Please add at least 1 game to the 'games.txt' file")
+            return
+
+        with open ('./games.txt', 'r') as fd:
+            if (fd.readlines() == []):
+                print("Please add at least 1 game to the 'games.txt' file")
+                return
+
+
+
         lines = list()
         with open('./games.txt', 'r') as fd:
             games = fd.read().format().split('\n')               

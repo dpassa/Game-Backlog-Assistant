@@ -54,9 +54,10 @@ pip install -r requirements.txt
 <details>
     <summary>Finding Your Notion Page ID</summary>
 
+    ### Ur Cooked Mate
 
-    ```
-a
+    ```py
+        os.delete()
     ```
 </details>
 

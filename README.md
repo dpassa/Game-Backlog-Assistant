@@ -53,6 +53,8 @@ pip install -r requirements.txt
 
 ### Ur Cooked Mate
 
+![Alt text](/images/Integration_Secret_Key.png)
+
 ```py
     
 ```

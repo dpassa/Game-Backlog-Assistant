@@ -32,37 +32,49 @@ pip install -r requirements.txt
 }
 ```
 <details>
-<summary>Finding Your Notion Token</summary>
-### Finding your Notion Token
+    <summary>**Finding Your Notion Token**</summary>
 
-```
 
-```
+    ```
+
+    ```
 </details>
 
-### Finding your Notion Page ID
+<details>
+    <summary>**Finding Your Notion Page ID**</summary>
 
-```
 
-```
+    ```
 
-### Finding your Notion Database ID
+    ```
+</details>
 
-```
+<details>
+    <summary>**Finding Your Notion Database ID**</summary>
 
-```
 
-### Finding your IGDB Client ID
+    ```
 
-```
+    ```
+</details>
 
-```
+<details>
+    <summary>**Finding Your IGDB Client ID**</summary>
 
-### Finding your IGDB Secret Token
 
-```
+    ```
 
-```
+    ```
+</details>
+
+<details>
+    <summary>**Finding Your IGDB Secret Token**</summary>
+
+
+    ```
+
+    ```
+</details>
 
 ## Usage
 

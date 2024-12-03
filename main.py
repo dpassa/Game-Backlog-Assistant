@@ -1,6 +1,7 @@
 from notion_client import Client
 from IGDB import *
 from getCompeletionTime import getTimeToCompelete
+from consts import *
 import json
 import os
 
@@ -71,7 +72,12 @@ def create_simple_blocks_from_content(client, content):
 
     return page_simple_blocks
     
-def write_row(client, database_id, coverLink, title, consoles, releaseDate, online, genres, length):
+def write_row(client, database_id, coverLink, title, consoles, releaseDate, online, genres, length, related_page_id):
+    # Rimuovi le virgole dai valori e assicurati che ogni valore sia un dizionario con una chiave 'name'
+    cleaned_genres = [{'name': genre['name'].replace(',', '')} for genre in genres]
+    cleaned_consoles = [{'name': console['name'].replace(',', '')} for console in consoles]
+    cleaned_online = [{'name': online_option['name'].replace(',', '')} for online_option in online]
+
     client.pages.create(
         **{
             "parent": {
@@ -87,10 +93,11 @@ def write_row(client, database_id, coverLink, title, consoles, releaseDate, onli
                 'title': {'title': [{'text': {'content': title}}]},
                 'Status': {'select': {'name': "Backlog"}},
                 'Release Date': {'date': {'start': releaseDate}},
-                'genre': {'multi_select': genres},
-                'Console': {'multi_select': consoles},
-                'Online': {'multi_select': online},        
-                'Length': {'number':length}        
+                'genre': {'multi_select': cleaned_genres},
+                'Console': {'multi_select': cleaned_consoles},
+                'Online': {'multi_select': cleaned_online},        
+                'Length': {'number': length},
+                'Store': {'relation': [{'id': related_page_id}]}
             }
         }
     )
@@ -145,7 +152,7 @@ def write_game(client, title, debug = False):
     length = getTimeToCompelete(title)
 
     if not failed:
-        write_row(client, notion_database_id, cover, title, consoles, releaseDate, online, genres, length)
+        write_row(client, notion_database_id, cover, title, consoles, releaseDate, online, genres, length, NOTION_PAGE_ID)
         print('Game Added to Database')
     else:
         print('Game Not Added to Database')
@@ -155,45 +162,41 @@ def main():
     client = Client(auth=notion_token)
 
     q = input('Single Game? y/n ')
-    if (q.lower() == 'y'):
+    if q.lower() == 'y':
         title = input('Game title: ')
         write_game(client, title, True)        
     else:
-        if (not os.path.exists('./games.txt')):
-            with open('./games.txt', 'w') as fd:
+        if not os.path.exists('./games.txt'):
+            with open('./games.txt', 'w', encoding='utf-8') as fd:
                 fd.close()
             
             print("Please add at least 1 game to the 'games.txt' file")
             return
 
-        with open ('./games.txt', 'r') as fd:
-            if (fd.readlines() == []):
+        with open('./games.txt', 'r', encoding='ISO-8859-1') as fd:
+            if fd.readlines() == []:
                 print("Please add at least 1 game to the 'games.txt' file")
                 return
 
-
-
         lines = list()
-        with open('./games.txt', 'r') as fd:
+        with open('./games.txt', 'r', encoding='ISO-8859-1') as fd:
             games = fd.read().format().split('\n')               
             fd.close()
 
-        with open('./games.txt', 'r') as fd:
-            lines = fd.readlines()         
-            fd.close()
+        with open('./games.txt', 'r', encoding='ISO-8859-1') as fd:
+            lines = fd.readlines()
             
         count = 0
         for game in games:
             fail = write_game(client, game)   
             
-            if (fail):
+            if fail:
                 count += 1
             else:            
                 lines.pop(count)            
 
-            with open('./games.txt', 'w') as fd:
+            with open('./games.txt', 'w', encoding='ISO-8859-1') as fd:
                 fd.writelines(lines)
 
 if __name__ == '__main__':
     main()
-

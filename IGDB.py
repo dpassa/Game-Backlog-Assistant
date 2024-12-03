@@ -88,7 +88,7 @@ def getGameGenres(name, debug = False):
         debugString = "Game Genres:"
         data2 = response.json()            
         for genre in data2:                     
-            if (genre['id'] in data['genres']):
+            if 'genres' in data and genre['id'] in data['genres']:
                 genres.append(genre['name'])
                 debugString += " " + genre['name']
         if (debug):
@@ -144,10 +144,11 @@ def getGamePlatforms(name, debug = False):
         platforms = list()
         debugPlatforms = "Game Platforms:"
         data2 = response.json()        
-        for platform in data2:                                   
-            if (platform['id'] in data['platforms']):
-                platforms.append(platform['name'])
-                debugPlatforms += " " + platform['name'] + ","
+        if 'platforms' in data and data['platforms']:
+            for platform in data2:                                   
+                if platform['id'] in data['platforms']:
+                    platforms.append(platform['name'])
+                    debugPlatforms += " " + platform['name'] + ","
         
         if(debug):
             debugPlatforms = debugPlatforms[:-1]
@@ -175,7 +176,7 @@ def getGameModes(name):
         gameModes = list()
         data2 = response.json()        
         for gameMode in data2:                        
-            if (gameMode['id'] in data['game_modes']):
+            if 'game_modes' in data and gameMode['id'] in data['game_modes']:
                 gameModes.append(gameMode['name'])
         return gameModes
     else:
@@ -184,7 +185,7 @@ def getGameModes(name):
 def getGameWebsites(id):
     response = requests.post('https://api.igdb.com/v4/websites', headers=headers, data=f'fields category,trusted,url; sort rating desc;where name = {id};')
 
-    if (response.status_code == 200):
+    if response.status_code == 200:
         data = response.json()
     else:
         print('Failed to get Websites')

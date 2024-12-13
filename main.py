@@ -5,13 +5,6 @@ from consts import *
 import json
 import os
 
-with open('./secrets.json', 'r') as fd:
-    secrets = json.load(fd)
-
-notion_token = secrets.get("notion_token")
-notion_page_id = secrets.get("notion_page_id")
-notion_database_id = secrets.get("notion_database_id")
-
 def write_text(client, page_id, text, type='paragraph'):
     client.blocks.children.append(
       block_id=page_id,
@@ -152,14 +145,14 @@ def write_game(client, title, debug = False):
     length = getTimeToCompelete(title)
 
     if not failed:
-        write_row(client, notion_database_id, cover, title, consoles, releaseDate, online, genres, length, NOTION_PAGE_ID)
+        write_row(client, NOTION_DATABASE_ID, cover, title, consoles, releaseDate, online, genres, length, NOTION_PAGE_ID)
         print('Game Added to Database')
     else:
         print('Game Not Added to Database')
     return failed
 
 def main():
-    client = Client(auth=notion_token)
+    client = Client(auth=NOTION_TOKEN)
 
     q = input('Single Game? y/n ')
     if q.lower() == 'y':

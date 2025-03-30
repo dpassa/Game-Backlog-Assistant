@@ -1,7 +1,7 @@
 import requests
 
 
-def getTimeToCompelete(title, debug = False):
+def get_timetocompelete(title, debug = False):
     gameName = title.split(' ')
 
     headers = {

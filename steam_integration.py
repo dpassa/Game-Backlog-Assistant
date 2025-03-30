@@ -1,7 +1,8 @@
 import requests
 from consts import *
+from store_integration_protocol import StoreIntegrationProtocol
 
-class SteamIntegration:
+class SteamIntegration(StoreIntegrationProtocol):
     def __init__(self, api_key, steamid):
         self.api_key = api_key
         self.steamid = steamid

@@ -1,130 +1,37 @@
-from notion_client import Client
+from notion_integration import NotionIntegration
+from steam_integration import SteamIntegration
+from gog_integration import GogIntegration
 from IGDB import *
-from getCompeletionTime import getTimeToCompelete
+from howlongtobeat_integration import get_timetocompelete
 from consts import *
-import json
-import os
 
-def write_text(client, page_id, text, type='paragraph'):
-    client.blocks.children.append(
-      block_id=page_id,
-      children=[{
-        "object": "block",
-        "type": type,
-        type: {
-          "rich_text": [{ "type": "text", "text": { "content": text } }]
-        }
-      }]
-    )
-
-def write_dict_to_file_as_json(content, file_name):
-    content_as_json_str = json.dumps(content)
-
-    with open(file_name, 'w') as f:
-        f.write(content_as_json_str)
-
-def read_text(client, page_id):
-    response = client.blocks.children.list(block_id=page_id)
-    return response['results']
-
-def safe_get(data, dot_chained_keys):
-    keys = dot_chained_keys.split('.')
-    for key in keys:
-        try:
-            if isinstance(data, list):
-                data = data[int(key)]
-            else:
-                data = data[key]
-        except (KeyError, TypeError, IndexError):
-            return None
-    return data
-
-def create_simple_blocks_from_content(client, content):
-    page_simple_blocks = []
-    for block in content:
-        block_id = block['id']
-        block_type = block['type']
-        has_children = block['has_children']
-        rich_text = block[block_type].get('rich_text')
-
-        if not rich_text:
-            return
-
-        simple_block = {
-            'id': block_id,
-            'type': block_type,
-            'text': rich_text[0]['plain_text']
-        }
-
-        if has_children:
-            nested_children = read_text(client, block_id)
-            simple_block['children'] = create_simple_blocks_from_content(client, nested_children)
-
-        page_simple_blocks.append(simple_block)
-
-
-    return page_simple_blocks
-    
-def write_row(client, database_id, coverLink, title, consoles, releaseDate, online, genres, length, related_page_id):
-    # Rimuovi le virgole dai valori e assicurati che ogni valore sia un dizionario con una chiave 'name'
-    cleaned_genres = [{'name': genre['name'].replace(',', '')} for genre in genres]
-    cleaned_consoles = [{'name': console['name'].replace(',', '')} for console in consoles]
-    cleaned_online = [{'name': online_option['name'].replace(',', '')} for online_option in online]
-
-    client.pages.create(
-        **{
-            "parent": {
-                "database_id": database_id
-            },
-            "cover": {
-                "type": "external",
-                "external": {
-                    "url": coverLink
-                }
-            },
-            'properties': {                
-                'title': {'title': [{'text': {'content': title}}]},
-                'Status': {'select': {'name': "Backlog"}},
-                'Release Date': {'date': {'start': releaseDate}},
-                'genre': {'multi_select': cleaned_genres},
-                'Console': {'multi_select': cleaned_consoles},
-                'Online': {'multi_select': cleaned_online},        
-                'Length': {'number': length},
-                'Store': {'relation': [{'id': related_page_id}]}
-            }
-        }
-    )
-
-def write_game(client, title, debug = False):
+def write_game(notion, title, debug=False):
     print('--- Adding ' + title + ' ---')
     failed = False
     consoles = list()
 
     consolesData = getGamePlatforms(title, debug)
-    if (consolesData != None):
+    if consolesData is not None:
         for console in consolesData:
-            consoles.append({'name':console})
-
+            consoles.append({'name': console})
 
     releaseDate = getGameRelease(title, debug)
-    if (releaseDate == None):
+    if releaseDate is None:
         releaseDate = datetime.datetime.now().strftime("%Y-%m-%d")
         failed = True
 
-
     genres = list()
-    genresData = getGameGenres(title)    
-    if (genresData != None):
+    genresData = getGameGenres(title)
+    if genresData is not None:
         for genre in genresData:
-            genres.append({'name':genre})
-
+            genres.append({'name': genre})
 
     themes = getGameThemes(title)
-    if (themes != None):
+    if themes is not None:
         for theme in themes:
-            genres.append({'name':theme})
+            genres.append({'name': theme})
 
-    if (debug):
+    if debug:
         debugGenres = "Game Genres:"
         for genre in genres:
             debugGenres += " " + genre["name"] + ","
@@ -133,63 +40,46 @@ def write_game(client, title, debug = False):
 
     online = list()
     gameModeData = getGameModes(title)
-    if (gameModeData != None):
+    if gameModeData is not None:
         for gameMode in gameModeData:
-            online.append({'name':gameMode})    
-        
+            online.append({'name': gameMode})
 
     cover = getCoverLink(getGameID(title))
-    if (cover == None):
+    if cover is None:
         cover = 'https://www.nctm.org/uploadedImages/Publications/TCM_Blog/checkerboard.png'
 
-    length = getTimeToCompelete(title)
+    length = get_timetocompelete(title)
 
     if not failed:
-        write_row(client, NOTION_DATABASE_ID, cover, title, consoles, releaseDate, online, genres, length, NOTION_PAGE_ID)
+        notion.write_row(NOTION_DATABASE_ID, cover, title, consoles, releaseDate, online, genres, length, NOTION_PAGE_ID)
         print('Game Added to Database')
     else:
         print('Game Not Added to Database')
     return failed
 
 def main():
-    client = Client(auth=NOTION_TOKEN)
+    notion = NotionIntegration(auth_token=NOTION_TOKEN)
 
-    q = input('Single Game? y/n ')
-    if q.lower() == 'y':
-        title = input('Game title: ')
-        write_game(client, title, True)        
-    else:
-        if not os.path.exists('./games.txt'):
-            with open('./games.txt', 'w', encoding='utf-8') as fd:
-                fd.close()
-            
-            print("Please add at least 1 game to the 'games.txt' file")
-            return
+    integrations = []
 
-        with open('./games.txt', 'r', encoding='ISO-8859-1') as fd:
-            if fd.readlines() == []:
-                print("Please add at least 1 game to the 'games.txt' file")
-                return
+    if STEAM_API_KEY and STEAM_USERID_64:
+        integrations.append(SteamIntegration(api_key=STEAM_API_KEY, steamid=STEAM_USERID_64))
 
-        lines = list()
-        with open('./games.txt', 'r', encoding='ISO-8859-1') as fd:
-            games = fd.read().format().split('\n')               
-            fd.close()
+    if GOG_USERNAME and GOG_PASSWORD:
+        integrations.append(GogIntegration())
 
-        with open('./games.txt', 'r', encoding='ISO-8859-1') as fd:
-            lines = fd.readlines()
-            
-        count = 0
-        for game in games:
-            fail = write_game(client, game)   
-            
-            if fail:
-                count += 1
-            else:            
-                lines.pop(count)            
+    games = []
 
-            with open('./games.txt', 'w', encoding='ISO-8859-1') as fd:
-                fd.writelines(lines)
+    for integration in integrations:
+        owned_games = integration.get_owned_games()
+        games.extend([game['name'] for game in owned_games])
+
+    if not games:
+        print("No games found in Steam or GOG libraries.")
+        return
+
+    for game in games:
+        write_game(notion, game)
 
 if __name__ == '__main__':
     main()

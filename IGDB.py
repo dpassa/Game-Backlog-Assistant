@@ -1,4 +1,5 @@
 import requests, datetime, json
+from consts import IGDB_API_V4_GAMES, IGDB_API_V4_GENRES, IGDB_API_V4_PLATFORMS,IGDB_API_V4_GAME_MODES, IGDB_API_V4_THEMES, IGDB_CLIENT_ID, IGDB_SECRET, IGDB_API_V4_WEBSITES,IGDB_API_V4_COVERS
 from enum import Enum
 
 
@@ -24,11 +25,8 @@ class Platform(Enum):
     NintendoSwitch = 130
 
 
-with open('./secrets.json', 'r') as fd:
-    secrets = json.load(fd)
-
-clientID = secrets.get("IGDB_clientID")
-secret = secrets.get("IGDB_secret")
+clientID = IGDB_CLIENT_ID
+secret = IGDB_SECRET
 
 auth = requests.post(f'https://id.twitch.tv/oauth2/token?client_id={clientID}&client_secret={secret}&grant_type=client_credentials')
 
@@ -42,8 +40,8 @@ headers = {
     "Authorization": f"Bearer {access_token}"
 }
 
-def getGameID(name):
-    response = requests.post('https://api.igdb.com/v4/games/', headers=headers, data=f'fields id; sort rating desc;where name = "{name}"; limit 1;')
+def get_game_id(name):
+    response = requests.post(IGDB_API_V4_GAMES, headers=headers, data=f'fields id; sort rating desc;where name = "{name}"; limit 1;')
     if response.status_code == 200:
         try:
             data = response.json()[0]        
@@ -53,8 +51,8 @@ def getGameID(name):
     else:
         print('Failed to get Game ID')
 
-def getGameRelease(name, debug = False):
-    response = requests.post('https://api.igdb.com/v4/games', headers=headers, data=f'fields first_release_date; sort rating desc;where name = "{name}"; limit 1;')
+def get_game_release(name, debug = False):
+    response = requests.post(IGDB_API_V4_GAMES, headers=headers, data=f'fields first_release_date; sort rating desc;where name = "{name}"; limit 1;')
     if response.status_code == 200:
         try:
             data = response.json()[0]        
@@ -67,9 +65,9 @@ def getGameRelease(name, debug = False):
     else:
         print('Failed to get Release Date')
 
-def getGameGenres(name, debug = False):
+def get_game_genres(name, debug = False):
     
-    response = requests.post('https://api.igdb.com/v4/games', headers=headers, data=f'fields genres; sort rating desc;where name = "{name}"; limit 1;')
+    response = requests.post(IGDB_API_V4_GAMES, headers=headers, data=f'fields genres; sort rating desc;where name = "{name}"; limit 1;')
     
     if response.status_code == 200:              
         try:  
@@ -81,24 +79,24 @@ def getGameGenres(name, debug = False):
         print('Failed to get Genres')
         return 
     
-    response = requests.post('https://api.igdb.com/v4/genres', headers=headers, data=f'fields name;')
+    response = requests.post(IGDB_API_V4_GENRES, headers=headers, data=f'fields name;')
 
     if response.status_code == 200:
-        genres = list()
-        debugString = "Game Genres:"
+        genres = []
+        debugstring = "Game Genres:"
         data2 = response.json()            
         for genre in data2:                     
             if 'genres' in data and genre['id'] in data['genres']:
                 genres.append(genre['name'])
-                debugString += " " + genre['name']
+                debugstring += " " + genre['name']
         if (debug):
-            print(debugString)        
+            print(debugstring)        
         return genres
     else:
         print('Failed to get Genres')      
 
-def getGameThemes(name):
-    response = requests.post('https://api.igdb.com/v4/games', headers=headers, data=f'fields themes; sort rating desc;where name = "{name}"; limit 1;')
+def get_game_themes(name):
+    response = requests.post(IGDB_API_V4_GAMES, headers=headers, data=f'fields themes; sort rating desc;where name = "{name}"; limit 1;')
     if response.status_code == 200:
         try:        
             data = response.json()[0] 
@@ -109,10 +107,10 @@ def getGameThemes(name):
         print('Failed to get Themes')
         return 
     
-    response = requests.post('https://api.igdb.com/v4/themes', headers=headers, data=f'fields name;')
+    response = requests.post(IGDB_API_V4_THEMES, headers=headers, data=f'fields name;')
     
     if response.status_code == 200:
-        genres = list()
+        genres = []
         data2 = response.json()
         
         try:
@@ -126,8 +124,8 @@ def getGameThemes(name):
     else:
         print('Failed to get Themes')        
 
-def getGamePlatforms(name, debug = False): 
-    response = requests.post('https://api.igdb.com/v4/games', headers=headers, data=f'fields platforms; sort rating desc;where name = "{name}"; limit 1;')
+def get_game_platforms(name, debug = False): 
+    response = requests.post(IGDB_API_V4_GAMES, headers=headers, data=f'fields platforms; sort rating desc;where name = "{name}"; limit 1;')
     if response.status_code == 200:
         try:
             data = response.json()[0]                                     
@@ -138,28 +136,28 @@ def getGamePlatforms(name, debug = False):
         print('Failed to get Platforms')        
         return 
     
-    response = requests.post('https://api.igdb.com/v4/platforms', headers=headers, data=f'fields name; limit 500;')
+    response = requests.post(IGDB_API_V4_THEMES, headers=headers, data=f'fields name; limit 500;')
     
     if response.status_code == 200:
-        platforms = list()
-        debugPlatforms = "Game Platforms:"
+        platforms = []
+        debugplatforms = "Game Platforms:"
         data2 = response.json()        
         if 'platforms' in data and data['platforms']:
             for platform in data2:                                   
                 if platform['id'] in data['platforms']:
                     platforms.append(platform['name'])
-                    debugPlatforms += " " + platform['name'] + ","
+                    debugplatforms += " " + platform['name'] + ","
         
         if(debug):
-            debugPlatforms = debugPlatforms[:-1]
-            print(debugPlatforms)
+            debugplatforms = debugplatforms[:-1]
+            print(debugplatforms)
 
         return platforms
     else:
         print('Failed to get Platforms')    
 
-def getGameModes(name):
-    response = requests.post('https://api.igdb.com/v4/games', headers=headers, data=f'fields game_modes; sort rating desc;where name = "{name}"; limit 1;')
+def get_game_modes(name):
+    response = requests.post(IGDB_API_V4_GAMES, headers=headers, data=f'fields game_modes; sort rating desc;where name = "{name}"; limit 1;')
     if response.status_code == 200:
         try:
             data = response.json()[0]             
@@ -170,27 +168,27 @@ def getGameModes(name):
         print('Failed to get Game Modes')        
         return 
     
-    response = requests.post('https://api.igdb.com/v4/game_modes', headers=headers, data=f'fields name;')
+    response = requests.post(IGDB_API_V4_GAME_MODES, headers=headers, data=f'fields name;')
     
     if response.status_code == 200:
-        gameModes = list()
+        gamemodes = []
         data2 = response.json()        
-        for gameMode in data2:                        
-            if 'game_modes' in data and gameMode['id'] in data['game_modes']:
-                gameModes.append(gameMode['name'])
-        return gameModes
+        for gamemode in data2:                        
+            if 'game_modes' in data and gamemode['id'] in data['game_modes']:
+                gamemodes.append(gamemode['name'])
+        return gamemodes
     else:
         print('Failed to get Themes')  
 
-def getGameWebsites(id):
-    response = requests.post('https://api.igdb.com/v4/websites', headers=headers, data=f'fields category,trusted,url; sort rating desc;where name = {id};')
+def get_game_websites(id):
+    response = requests.post(IGDB_API_V4_WEBSITES, headers=headers, data=f'fields category,trusted,url; sort rating desc;where name = {id};')
 
     if response.status_code == 200:
         data = response.json()
     else:
         print('Failed to get Websites')
     
-    websites = list()
+    websites = []
 
     for website in data:
         if (website['trusted']):
@@ -198,8 +196,8 @@ def getGameWebsites(id):
 
     return websites
 
-def getCoverLink(id):
-    response = requests.post('https://api.igdb.com/v4/covers', headers=headers, data=f'fields url; where game = {id};')            
+def get_cover_link(id):
+    response = requests.post(IGDB_API_V4_COVERS, headers=headers, data=f'fields url; where game = {id};')            
 
     if response.status_code == 200:
         try:
@@ -210,8 +208,8 @@ def getCoverLink(id):
     else:
         print("Failed to find Cover Link")        
 
-def saveCover(id, fileName):
-    response = requests.post('https://api.igdb.com/v4/covers', headers=headers, data=f'fields url; sort rating desc;where name = {id};')        
+def save_cover(id, filename):
+    response = requests.post(IGDB_API_V4_COVERS, headers=headers, data=f'fields url; sort rating desc;where name = {id};')        
     if response.status_code == 200:
         try:
             key = response.json()[0]['url'].split('t_thumb/')[1]    
@@ -224,7 +222,7 @@ def saveCover(id, fileName):
         return
 
     if response.status_code == 200:
-        with open(f"{fileName}.jpg", "wb") as file:
+        with open(f"{filename}.jpg", "wb") as file:
             file.write(response.content)
         print("Image downloaded successfully")
     else:

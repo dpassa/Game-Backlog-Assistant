@@ -1,13 +1,13 @@
 import requests
 import json
-from consts import GOG_USERNAME, GOG_PASSWORD
+from consts import GOG_USERNAME
 
 class GogAuthCode:
     BASE_AUTH_URL = "https://login.gog.com"
 
     def __init__(self):
         self.username = GOG_USERNAME
-        self.password = GOG_PASSWORD
+        self.password = "GOG_PASSWORD"
         self.access_token = None
         self.session = requests.Session()
 

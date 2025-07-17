@@ -1,5 +1,4 @@
 import requests
-from consts import *
 from store_integration_protocol import StoreIntegrationProtocol
 
 class SteamIntegration(StoreIntegrationProtocol):

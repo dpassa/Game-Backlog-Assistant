@@ -51,7 +51,7 @@ class NotionIntegration:
 
         return page_simple_blocks
 
-    def write_row(self, database_id, coverLink, title, consoles, releaseDate, online, genres, length, related_page_id):
+    def write_row(self, database_id, cover_link, title, consoles, release_date, online, genres, length, related_page_id):
         cleaned_genres = [{'name': genre['name'].replace(',', '')} for genre in genres]
         cleaned_consoles = [{'name': console['name'].replace(',', '')} for console in consoles]
         cleaned_online = [{'name': online_option['name'].replace(',', '')} for online_option in online]
@@ -64,13 +64,13 @@ class NotionIntegration:
                 "cover": {
                     "type": "external",
                     "external": {
-                        "url": coverLink
+                        "url": cover_link
                     }
                 },
                 'properties': {
                     'title': {'title': [{'text': {'content': title}}]},
                     'Status': {'select': {'name': "Backlog"}},
-                    'Release Date': {'date': {'start': releaseDate}},
+                    'Release Date': {'date': {'start': release_date}},
                     'genre': {'multi_select': cleaned_genres},
                     'Console': {'multi_select': cleaned_consoles},
                     'Online': {'multi_select': cleaned_online},

@@ -6,50 +6,68 @@ from howlongtobeat_integration import get_timetocompelete
 from consts import NOTION_DATABASE_ID, NOTION_PAGE_ID, STEAM_API_KEY, STEAM_USERID_64, GOG_USERNAME, NOTION_TOKEN
 import datetime
 
-def write_game(notion, title, debug=False):
-    print('--- Adding ' + title + ' ---')
-    failed = False
+def handle_game_platforms(title, debug=False):
     consoles = []
-
     consoles_data = get_game_platforms(title, debug)
     if consoles_data is not None:
         for console in consoles_data:
             consoles.append({'name': console})
+    return consoles
 
+def handle_game_release(title, debug=False):
     release_date = get_game_release(title, debug)
     if release_date is None:
         release_date = datetime.datetime.now().strftime("%Y-%m-%d")
-        failed = True
+        return release_date, True  # True indica che è fallito
+    return release_date, False
 
+def handle_game_genres(title, debug=False):
     genres = []
     genres_data = get_game_genres(title)
     if genres_data is not None:
         for genre in genres_data:
             genres.append({'name': genre})
-
+    
     themes = get_game_themes(title)
     if themes is not None:
         for theme in themes:
             genres.append({'name': theme})
-
-    if debug:
+    
+    if debug and genres:
         debug_genres = "Game Genres:"
         for genre in genres:
-            debug_genres += " " + genre["name"] + ","
+            debug_genres += " " + genre["name"] + ",")
         debug_genres = debug_genres[:-1]
         print(debug_genres)
+    
+    return genres
 
+def handle_game_modes(title):
     online = []
     game_mode_data = get_game_modes(title)
     if game_mode_data is not None:
         for game_mode in game_mode_data:
             online.append({'name': game_mode})
+    return online
 
+def handle_game_cover(title):
     cover = get_cover_link(get_game_id(title))
     if cover is None:
         cover = 'https://www.nctm.org/uploadedImages/Publications/TCM_Blog/checkerboard.png'
+    return cover
 
-    length = get_timetocompelete(title)
+def handle_game_length(title):
+    return get_timetocompelete(title)
+
+def write_game(notion, title, debug=False):
+    print('--- Adding ' + title + ' ---')
+    
+    consoles = handle_game_platforms(title, debug)
+    release_date, failed = handle_game_release(title, debug)
+    genres = handle_game_genres(title, debug)
+    online = handle_game_modes(title)
+    cover = handle_game_cover(title)
+    length = handle_game_length(title)
 
     if not failed:
         notion.write_row(NOTION_DATABASE_ID, cover, title, consoles, release_date, online, genres, length, NOTION_PAGE_ID)

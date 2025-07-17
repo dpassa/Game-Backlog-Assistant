@@ -3,7 +3,6 @@ secrets
 __pycache__/
 __pycache__/*
 secrets.json
-*_cookies.json
 sonar-project.properties
 .scannerwork/
 .vscode/

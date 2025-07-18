@@ -3,7 +3,7 @@ from steam_integration import SteamIntegration
 from gog_integration import GogIntegration
 from IGDB import get_game_platforms, get_game_release, get_game_genres, get_game_themes, get_game_modes, get_cover_link, get_game_id
 from howlongtobeat_integration import get_timetocompelete
-from consts import NOTION_DATABASE_ID, NOTION_PAGE_ID, STEAM_API_KEY, STEAM_USERID_64, GOG_USERNAME, NOTION_TOKEN
+from consts import NOTION_DATABASE_ID, NOTION_PAGE_ID, STEAM_API_KEY, STEAM_USERID_64, GOG_PUBLIC_USERNAME, NOTION_TOKEN
 import datetime
 
 def handle_game_platforms(title, debug=False):
@@ -36,7 +36,7 @@ def handle_game_genres(title, debug=False):
     if debug and genres:
         debug_genres = "Game Genres:"
         for genre in genres:
-            debug_genres += " " + genre["name"] + ",")
+            debug_genres += " " + genre["name"] + ","
         debug_genres = debug_genres[:-1]
         print(debug_genres)
     
@@ -82,8 +82,8 @@ def main():
     if STEAM_API_KEY and STEAM_USERID_64:
         integrations.append(SteamIntegration(api_key=STEAM_API_KEY, steamid=STEAM_USERID_64))
 
-    if GOG_USERNAME:
-        integrations.append(GogIntegration(username=GOG_USERNAME))
+    if GOG_PUBLIC_USERNAME:
+        integrations.append(GogIntegration(username=GOG_PUBLIC_USERNAME))
 
     games = []
 

@@ -12,10 +12,10 @@ NOTION_DATABASE_ID = os.getenv('NOTION_DATABASE_ID')
 NOTION_TOKEN = os.getenv('NOTION_TOKEN')
 IGDB_CLIENT_ID = os.getenv('IGDB_CLIENTID')
 IGDB_SECRET = os.getenv('IGDB_SECRET')
-GOG_USERNAME = "BifcottoLol"
+GOG_PUBLIC_USERNAME = os.getenv('GOG_PUBLIC_USERNAME')
 
 
-GOG_PROFILE_URL = "https://www.gog.com/u/BifcottoLol/games?"
+GOG_PROFILE_URL = "https://www.gog.com/u/{username}/games/stats"
 
 IGDB_API_V4 = "https://api.igdb.com/v4"
 IGDB_API_V4_GENRES = IGDB_API_V4 + '/genres'

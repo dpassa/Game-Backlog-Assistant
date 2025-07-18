@@ -6,3 +6,6 @@ secrets.json
 sonar-project.properties
 .scannerwork/
 .vscode/
+coverage-reports/
+.coverage
+.coveragearc

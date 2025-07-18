@@ -59,9 +59,8 @@ def get_timetocompelete(title, debug = False):
         },
     }
 
-    response = requests.post('https://howlongtobeat.com/api/search', headers=headers, json=json_data)
-    
     try:
+        response = requests.post('https://howlongtobeat.com/api/search', headers=headers, json=json_data)
         completion_time = round(response.json()['data'][0]["comp_main"]/60/60,0)
         if (debug):
             print("Game Compeletion Time: " + str(completion_time))

@@ -9,3 +9,5 @@ sonar-project.properties
 coverage-reports/
 .coverage
 .coveragearc
+.pytest_cache/
+.steam_api_usage.json

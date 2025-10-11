@@ -1,8 +1,8 @@
 import requests
 
 
-def getTimeToCompelete(title, debug = False):
-    gameName = title.split(' ')
+def get_timetocompelete(title, debug = False):
+    game_name = title.split(' ')
 
     headers = {
         'authority': 'howlongtobeat.com',
@@ -23,7 +23,7 @@ def getTimeToCompelete(title, debug = False):
 
     json_data = {
         'searchType': 'games',
-        'searchTerms': gameName,
+        'searchTerms': game_name,
         'searchPage': 1,
         'size': 20,
         'searchOptions': {
@@ -59,12 +59,11 @@ def getTimeToCompelete(title, debug = False):
         },
     }
 
-    response = requests.post('https://howlongtobeat.com/api/search', headers=headers, json=json_data)
-    
     try:
-        compeltionTime = round(response.json()['data'][0]["comp_main"]/60/60,0)
+        response = requests.post('https://howlongtobeat.com/api/search', headers=headers, json=json_data)
+        completion_time = round(response.json()['data'][0]["comp_main"]/60/60,0)
         if (debug):
-            print("Game Compeletion Time: " + str(compeltionTime))
-        return compeltionTime
+            print("Game Compeletion Time: " + str(completion_time))
+        return completion_time
     except Exception:
         return 0

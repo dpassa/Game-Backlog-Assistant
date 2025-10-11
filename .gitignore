@@ -1,0 +1,13 @@
+.env
+secrets
+__pycache__/
+__pycache__/*
+secrets.json
+sonar-project.properties
+.scannerwork/
+.vscode/
+coverage-reports/
+.coverage
+.coveragearc
+.pytest_cache/
+.steam_api_usage.json

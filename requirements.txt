@@ -1,0 +1,5 @@
+notion_client==1.0.0
+requests==2.25.1
+datetime==4.3
+igdb-api-python==1.0.0
+python-dotenv==1.0.1

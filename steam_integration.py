@@ -7,10 +7,10 @@ from store_integration_protocol import StoreIntegrationProtocol
 from consts import NOTION_STORE_STEAM_ID, STEAM_API_KEY, STEAM_USERID_64
 
 class SteamIntegration(StoreIntegrationProtocol):
-    def __init__(self, api_key, steamid):
+    def __init__(self, api_key, steamid, cache_enabled=True, cache_ttl_hours=24):
         self.api_key = api_key
         self.steamid = steamid
-        
+
         # Smart rate limiting based on Steam Web API Terms: 100,000 calls/day
         # Reference: https://steamcommunity.com/dev/apiterms
         self.daily_limit = 100000  # Official Steam API limit
@@ -18,9 +18,15 @@ class SteamIntegration(StoreIntegrationProtocol):
         self.last_request_time = 0
         self.requests_today = self._load_daily_usage()
         self.current_date = datetime.now().date()
-        
+
         # Adaptive rate limiting - only slow down when needed
         self.min_interval_when_limited = 1.0  # Fallback interval after 429 errors
+
+        # Caching configuration
+        self.cache_enabled = cache_enabled
+        self.cache_ttl_hours = cache_ttl_hours
+        self.cache_file = '.steam_api_cache.json'
+        self.cache = self._load_cache() if cache_enabled else {}
         
     def _load_daily_usage(self):
         """Load today's API usage count from file"""
@@ -51,6 +57,62 @@ class SteamIntegration(StoreIntegrationProtocol):
                 json.dump(data, f)
         except Exception as e:
             print(f"Warning: Could not save API usage data: {e}")
+
+    def _load_cache(self):
+        """Load cached API responses from file"""
+        try:
+            if os.path.exists(self.cache_file):
+                with open(self.cache_file, 'r', encoding='utf-8') as f:
+                    cache_data = json.load(f)
+                    # Clean up expired entries
+                    current_time = datetime.now().isoformat()
+                    cleaned_cache = {
+                        k: v for k, v in cache_data.items()
+                        if v.get('expires_at', '1900-01-01') > current_time
+                    }
+                    return cleaned_cache
+            return {}
+        except (json.JSONDecodeError, Exception) as e:
+            print(f"Warning: Could not load cache, starting fresh: {e}")
+            return {}
+
+    def _save_cache(self):
+        """Save cache to file"""
+        try:
+            with open(self.cache_file, 'w', encoding='utf-8') as f:
+                json.dump(self.cache, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            print(f"Warning: Could not save cache: {e}")
+
+    def _get_from_cache(self, cache_key):
+        """Get data from cache if available and not expired"""
+        if not self.cache_enabled:
+            return None
+
+        cached_entry = self.cache.get(cache_key)
+        if cached_entry:
+            expires_at = cached_entry.get('expires_at', '1900-01-01')
+            if expires_at > datetime.now().isoformat():
+                print(f"📦 Using cached data for {cache_key}")
+                return cached_entry.get('data')
+            else:
+                # Remove expired entry
+                del self.cache[cache_key]
+
+        return None
+
+    def _save_to_cache(self, cache_key, data):
+        """Save data to cache with TTL"""
+        if not self.cache_enabled:
+            return
+
+        expires_at = (datetime.now() + timedelta(hours=self.cache_ttl_hours)).isoformat()
+        self.cache[cache_key] = {
+            'data': data,
+            'cached_at': datetime.now().isoformat(),
+            'expires_at': expires_at
+        }
+        self._save_cache()
     
     def _increment_request_count(self):
         """Increment request counter and save to file"""
@@ -120,52 +182,101 @@ class SteamIntegration(StoreIntegrationProtocol):
             print(f"📊 Steam API usage: {self.requests_today}/{self.daily_limit} ({current_usage_percent:.1f}%)")
 
     def get_game_info(self, appid):
-        """Get detailed game information from Steam store API with smart rate limiting"""
+        """
+        Get detailed game information from Steam store API with caching,
+        smart rate limiting and exponential backoff retry logic.
+        """
+        # Check cache first
+        cache_key = f"appid_{appid}"
+        cached_data = self._get_from_cache(cache_key)
+        if cached_data is not None:
+            return cached_data
+
+        # Not in cache, fetch from API
         self._smart_rate_limit()
 
         url = f'https://store.steampowered.com/api/appdetails?appids={appid}'
-        try:
-            response = requests.get(url, timeout=10)
+        max_retries = 3
+        base_delay = 5  # Base delay in seconds
 
-            if response.status_code == 429:
-                print("🚨 HTTP 429 Rate Limited by Steam API! Adapting rate limiting...")
-                # Increase rate limiting for future requests
-                self.min_interval_when_limited = min(2.0, self.min_interval_when_limited * 1.5)
-                print(f"⏳ Waiting 10 seconds and retrying appid {appid}...")
-                time.sleep(10)
-                # Don't call _smart_rate_limit again for retry
+        for attempt in range(max_retries):
+            try:
                 response = requests.get(url, timeout=10)
 
-            data = response.json()
-            if data and str(appid) in data:
-                app_data = data[str(appid)]
-                if app_data.get('success') and 'data' in app_data:
-                    print(f"✅ Retrieved detailed info for appid {appid}")
-                    return app_data['data']
-                else:
-                    print(f"❌ No valid data for appid {appid}")
+                # Handle rate limiting with exponential backoff
+                if response.status_code == 429:
+                    # Calculate exponential backoff delay: base_delay * (2 ^ attempt)
+                    retry_delay = base_delay * (2 ** attempt)
+                    print(f"🚨 HTTP 429 Rate Limited by Steam API (attempt {attempt + 1}/{max_retries})")
 
-            print(f"⚠️ No response data for appid {appid}")
-            return None
-        except (ValueError, TypeError, requests.RequestException) as e:
-            print(f"🚨 Error fetching info for appid {appid}: {str(e)}")
-            return None
+                    # Increase rate limiting for all future requests
+                    self.min_interval_when_limited = min(3.0, self.min_interval_when_limited * 1.5)
+
+                    if attempt < max_retries - 1:
+                        print(f"⏳ Exponential backoff: waiting {retry_delay}s before retry...")
+                        time.sleep(retry_delay)
+                        continue
+                    else:
+                        print(f"❌ Max retries reached for appid {appid}")
+                        return None
+
+                # Handle successful response
+                if response.status_code == 200:
+                    data = response.json()
+                    if data and str(appid) in data:
+                        app_data = data[str(appid)]
+                        if app_data.get('success') and 'data' in app_data:
+                            game_data = app_data['data']
+                            print(f"✅ Retrieved detailed info for appid {appid}")
+                            # Save to cache
+                            self._save_to_cache(cache_key, game_data)
+                            return game_data
+                        else:
+                            print(f"❌ No valid data for appid {appid}")
+
+                    print(f"⚠️ No response data for appid {appid}")
+                    return None
+
+                # Handle other HTTP errors
+                print(f"⚠️ HTTP {response.status_code} for appid {appid}")
+                if attempt < max_retries - 1:
+                    retry_delay = base_delay * (2 ** attempt)
+                    print(f"⏳ Retrying in {retry_delay}s...")
+                    time.sleep(retry_delay)
+                    continue
+
+                return None
+
+            except (ValueError, TypeError, requests.RequestException) as e:
+                print(f"🚨 Error fetching info for appid {appid} (attempt {attempt + 1}/{max_retries}): {str(e)}")
+
+                if attempt < max_retries - 1:
+                    retry_delay = base_delay * (2 ** attempt)
+                    print(f"⏳ Retrying in {retry_delay}s...")
+                    time.sleep(retry_delay)
+                    continue
+
+                return None
+
+        return None
     
     def normalize_games_list(self, games):
         normalized_games = []
         total_games = len(games)
         print(f"🔍 Processing {total_games} games for detailed information...")
-        
+
         for i, game in enumerate(games, 1):
             if i % 10 == 0 or i == total_games:
                 print(f"📊 Progress: {i}/{total_games} games processed ({(i/total_games)*100:.1f}%)")
-            
+
             print(f"🎯 Processing: {game['name']} (AppID: {game['appid']})")
             game_info = self.get_game_info(game['appid'])
             normalized_game = {
                 'appid': game['appid'],
                 'name': game['name'],
                 'notion_store_id': NOTION_STORE_STEAM_ID,
+                'external_id': str(game['appid']),  # Steam App ID as external_id
+                'store_name': 'Steam',  # Store identifier
             }
 
             # Extract all available metadata to skip IGDB calls

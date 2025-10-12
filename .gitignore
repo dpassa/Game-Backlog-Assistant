@@ -10,4 +10,11 @@ coverage-reports/
 .coverage
 .coveragearc
 .pytest_cache/
+
+# Steam API Cache and Usage Tracking (auto-generated)
 .steam_api_usage.json
+.steam_api_cache.json
+.steam_api_cache.*
+
+# Claude Code
+.claude

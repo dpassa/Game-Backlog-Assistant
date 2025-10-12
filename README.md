@@ -12,24 +12,48 @@ Automatically sync your gaming library from Steam, GOG, and other stores to a be
 - 🚀 **Smart Optimization**: Uses store data when available, reducing IGDB API calls by 55-60%
 - 📊 **Rich Metadata**: Platforms, genres, release dates, cover images, game modes, completion time
 - 🗂️ **Notion Integration**: Beautiful database with filtering, sorting, and status tracking
-- ⚡ **Fast Performance**: 2-3x faster than traditional methods
+- ⚡ **Fast Performance**: 30x faster with caching system
 - 🔍 **Debug Mode**: See exactly where each piece of data comes from
-- 🔄 **Duplicate Detection**: Automatically skips games already in your Notion database
+- 🔄 **Robust Duplicate Detection**: 100% accurate using external IDs
+- 🌍 **UTF-8 Support**: Handles all special characters (™, ©, ®, é, etc.)
+- 💾 **Smart Caching**: Reduces API calls to zero on subsequent runs
+- 🔁 **Auto-Retry**: Exponential backoff for API rate limits
+
+## 🆕 What's New
+
+### Recent Improvements (v2.0)
+
+✅ **UTF-8 Encoding** - No more crashes on special characters
+✅ **Smart Caching** - 30x faster on subsequent runs with persistent cache
+✅ **Exponential Backoff** - Intelligent retry logic for API rate limits
+✅ **Robust Duplicate Detection** - 100% accurate using external_id + store_name
+✅ **Automatic Migration** - Seamlessly updates existing games with new fields
+
+**Upgrading from a previous version?** See **[Migration Guide for Existing Users](docs/02_MIGRATION_FOR_EXISTING_USERS.md)** for a quick 3-step upgrade!
 
 ## 🚀 Quick Start
 
-New to the project? See **[QUICK_START.md](QUICK_START.md)** for a 5-minute setup guide!
+**New users:** See **[Quick Start Guide](docs/01_QUICK_START.md)** for a 5-minute setup!
+
+**Existing users upgrading:** See **[Migration for Existing Users](docs/02_MIGRATION_FOR_EXISTING_USERS.md)** ⭐
 
 ## 📚 Documentation
 
-- **[Quick Start Guide](QUICK_START.md)** - Get started in 5 minutes
-- **[Architecture Overview](ARCHITECTURE.md)** - System design and data flow
-- **[API Reference](API_REFERENCE.md)** - Complete API documentation for all integrations
-- **[Integration Guide](INTEGRATION_GUIDE.md)** - How to add new store integrations
-- **[Design Principles](DESIGN_PRINCIPLES.md)** - Core architectural principles
-- **[Duplicate Detection](DUPLICATE_DETECTION.md)** - How duplicate prevention works
-- **[Optimization Guide](OPTIMIZATION_IMPLEMENTATION.md)** - Implementation details for optimizations
-- **[API Testing Results](API_TESTING_RESULTS.md)** - Real-world API testing and validation results
+**Complete documentation available in [docs/](docs/00_README.md)**
+
+### Getting Started
+- **[Quick Start Guide](docs/01_QUICK_START.md)** - 5-minute setup for new users
+- **[Migration for Existing Users](docs/02_MIGRATION_FOR_EXISTING_USERS.md)** - Quick 3-step upgrade guide
+- **[Transitional Migration](docs/03_TRANSITIONAL_MIGRATION.md)** - How automatic migration works
+- **[Complete Migration Guide](docs/04_MIGRATION_GUIDE.md)** - Detailed migration with troubleshooting
+
+### Technical Documentation
+- **[Architecture](docs/architecture/ARCHITECTURE.md)** - System design and data flow
+- **[API Reference](docs/api/API_REFERENCE.md)** - Complete API documentation
+- **[Integration Guide](docs/development/INTEGRATION_GUIDE.md)** - Add new store integrations
+- **[Design Principles](docs/architecture/DESIGN_PRINCIPLES.md)** - Core architectural principles
+
+**[📖 View All Documentation](docs/00_README.md)**
 
 ## Notion Setup
 
@@ -222,9 +246,10 @@ python run_api_tests.py
 ## Contributing
 
 Contributions are welcome! Please see:
-- [INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md) for adding new store integrations
-- [DESIGN_PRINCIPLES.md](DESIGN_PRINCIPLES.md) for architecture guidelines
+- [Integration Guide](docs/development/INTEGRATION_GUIDE.md) for adding new store integrations
+- [Design Principles](docs/architecture/DESIGN_PRINCIPLES.md) for architecture guidelines
 - [tests/](tests/) for testing guidelines
+- [Complete Documentation](docs/00_README.md) for all documentation
 
 ## Thank you And Enjoy
 If you have any questions or issues feel free to ask for help

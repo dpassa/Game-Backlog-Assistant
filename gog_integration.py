@@ -45,7 +45,7 @@ class GogIntegration(StoreIntegrationProtocol):
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:140.0) Gecko/20100101 Firefox/140.0",
             "Accept": "application/hal+json, application/json, */*",
-            "Referer": "https://www.gog.com/u/BifcottoLol/games",
+            "Referer": f"https://www.gog.com/u/{self.username}/games",
             "X-Requested-With": "XMLHttpRequest"
         }
 
@@ -117,10 +117,13 @@ class GogIntegration(StoreIntegrationProtocol):
             if i % 50 == 0 or i == len(games):
                 print(f"📊 Progress: {i}/{len(games)} games normalized ({(i/len(games))*100:.1f}%)")
 
+            game_id = game_data.get('id', game.get('id'))
             normalized_game = {
-                'appid': game_data.get('id', game.get('id')),
+                'appid': game_id,
                 'name': game_title,
                 'notion_store_id': NOTION_STORE_GOG_ID,
+                'external_id': str(game_id),  # GOG product ID as external_id
+                'store_name': 'GOG',  # Store identifier
             }
 
             # GOG is primarily PC-only, but can support Mac and Linux

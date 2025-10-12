@@ -170,7 +170,7 @@ def write_game(notion, game_data, debug=False):
         # HowLongToBeat: Always required (no store provides this)
         length = handle_game_length(title)
 
-        # Write to Notion (with duplicate checking)
+        # Write to Notion (with duplicate checking using external_id + store)
         created, message = notion.write_row(
             NOTION_DATABASE_ID,
             cover,
@@ -181,6 +181,8 @@ def write_game(notion, game_data, debug=False):
             genres,
             length,
             game_data['notion_store_id'],
+            external_id=game_data.get('external_id'),  # Steam App ID or GOG product ID
+            store_name=game_data.get('store_name'),  # 'Steam' or 'GOG'
             skip_duplicates=True  # Skip if already exists
         )
 

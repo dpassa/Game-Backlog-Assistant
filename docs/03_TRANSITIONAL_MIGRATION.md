@@ -1,53 +1,53 @@
 # Transitional Migration Guide
 
-## Problema Risolto
+## Problem Solved
 
-Se hai già giochi nel tuo database Notion **prima** di aggiungere i campi "External ID" e "Store Name", il sistema ora gestisce automaticamente la migrazione.
+If you already have games in your Notion database **before** adding the "External ID" and "Store Name" fields, the system now handles the migration automatically.
 
 ---
 
-## Come Funziona la Migrazione Automatica
+## How Automatic Migration Works
 
-### Logica Implementata
+### Implemented Logic
 
-Il sistema usa una **strategia di duplicate detection a cascata**:
+The system uses a **cascading duplicate detection strategy**:
 
 ```
-1. Prova controllo con external_id + store_name
-   ↓ (se non trova)
-2. Prova controllo con titolo (legacy)
-   ↓ (se trova)
-3. AGGIORNA l'entry esistente con external_id + store_name
+1. Try check with external_id + store_name
+   ↓ (if not found)
+2. Try check with title (legacy)
+   ↓ (if found)
+3. UPDATE existing entry with external_id + store_name
    ↓
-4. Skip (duplicato)
+4. Skip (duplicate)
 ```
 
-### Cosa Succede Durante l'Esecuzione
+### What Happens During Execution
 
-#### Scenario 1: Database Vuoto (Nuovo Utente)
+#### Scenario 1: Empty Database (New User)
 ```bash
 python main.py
 
 [1/100] --- Adding Portal™ ---
 ✓ Game Added to Database
-# Crea nuova entry con tutti i campi (external_id + store_name inclusi)
+# Creates new entry with all fields (external_id + store_name included)
 ```
 
-#### Scenario 2: Database con Giochi Esistenti (Tuo Caso)
+#### Scenario 2: Database with Existing Games (Your Case)
 
-**Prima Esecuzione dopo l'Aggiornamento:**
+**First Run after Update:**
 ```bash
 python main.py
 
 [1/100] --- Adding Portal™ ---
 ⊘ Game 'Portal™' already exists, updated with external_id (skipped)
-# ✓ Trova il gioco esistente per titolo
-# ✓ Aggiorna con external_id=400, store_name=Steam
-# ✓ Skip (non duplica)
+# ✓ Finds existing game by title
+# ✓ Updates with external_id=400, store_name=Steam
+# ✓ Skips (doesn't duplicate)
 
 [2/100] --- Adding Dota 2 ---
 ⊘ Game 'Dota 2' already exists, updated with external_id (skipped)
-# ✓ Aggiorna external_id=570, store_name=Steam
+# ✓ Updates external_id=570, store_name=Steam
 
 ...
 
@@ -58,14 +58,14 @@ Added: 0 | Skipped: 100 | Errors: 0
 📝 All existing entries updated with external_id
 ```
 
-**Seconda Esecuzione (Dopo Migrazione):**
+**Second Run (After Migration):**
 ```bash
 python main.py
 
 [1/100] --- Adding Portal™ ---
 ⊘ Game 'Portal™' already exists in database (skipped)
-# ✓ Ora usa il controllo robusto (external_id + store)
-# ✓ Molto più veloce (niente titolo matching)
+# ✓ Now uses robust check (external_id + store)
+# ✓ Much faster (no title matching)
 
 [2/100] --- Adding Dota 2 ---
 ⊘ Game 'Dota 2' already exists in database (skipped)
@@ -80,43 +80,43 @@ Added: 0 | Skipped: 100 | Errors: 0
 
 ---
 
-## Passi da Seguire
+## Steps to Follow
 
-### 1. Aggiungi i Campi al Database Notion
+### 1. Add Fields to Notion Database
 
-**PRIMA di eseguire il nuovo codice:**
+**BEFORE running the new code:**
 
-1. Apri il tuo database Notion
-2. Aggiungi proprietà "**External ID**" (tipo: Text)
-3. Aggiungi proprietà "**Store Name**" (tipo: Text)
+1. Open your Notion database
+2. Add property "**External ID**" (type: Text)
+3. Add property "**Store Name**" (type: Text)
 
-**Screenshot dei campi:**
+**Fields screenshot:**
 ```
 ┌──────────────┬─────────┬─────────────┬──────────────┬────────┐
 │ Title        │ Status  │ External ID │ Store Name   │ ...    │
 ├──────────────┼─────────┼─────────────┼──────────────┼────────┤
-│ Portal™      │ Backlog │ (vuoto)     │ (vuoto)      │ ...    │
-│ Dota 2       │ Playing │ (vuoto)     │ (vuoto)      │ ...    │
+│ Portal™      │ Backlog │ (empty)     │ (empty)      │ ...    │
+│ Dota 2       │ Playing │ (empty)     │ (empty)      │ ...    │
 └──────────────┴─────────┴─────────────┴──────────────┴────────┘
 ```
 
-### 2. Esegui lo Script
+### 2. Run the Script
 
 ```bash
 cd "d:\Projects\Game-Backlog-Assistant"
 python main.py --debug
 ```
 
-### 3. Verifica l'Aggiornamento
+### 3. Verify the Update
 
-**Durante l'esecuzione vedrai:**
+**During execution you'll see:**
 ```
 [1/100] --- Adding Portal™ ---
 ✓ Updated existing entry with external_id=400, store=Steam
 ⊘ Game 'Portal™' already exists, updated with external_id (skipped)
 ```
 
-**Nel database Notion:**
+**In Notion database:**
 ```
 ┌──────────────┬─────────┬─────────────┬──────────────┬────────┐
 │ Title        │ Status  │ External ID │ Store Name   │ ...    │
@@ -126,56 +126,56 @@ python main.py --debug
 └──────────────┴─────────┴─────────────┴──────────────┴────────┘
 ```
 
-### 4. Esegui Nuovamente (Opzionale)
+### 4. Run Again (Optional)
 
-Per verificare che tutto funzioni:
+To verify everything works:
 
 ```bash
 python main.py
 ```
 
-**Output Atteso:**
+**Expected Output:**
 ```
 [1/100] --- Adding Portal™ ---
 ⊘ Game 'Portal™' already exists in database (skipped)
-# Ora usa external_id per il controllo (più veloce)
+# Now uses external_id for check (faster)
 ```
 
 ---
 
-## Dettagli Tecnici
+## Technical Details
 
-### Flusso di Controllo Duplicati
+### Duplicate Check Flow
 
 ```python
 def write_row(..., external_id=None, store_name=None, ...):
-    # Step 1: Controllo robusto (external_id + store)
+    # Step 1: Robust check (external_id + store)
     if external_id and store_name:
         exists = check_game_exists_by_external_id(external_id, store_name)
         if exists:
-            return "skipped"  # ✓ Trovato con external_id
+            return "skipped"  # ✓ Found with external_id
 
-    # Step 2: Fallback controllo legacy (titolo)
+    # Step 2: Fallback to legacy check (title)
     exists_by_title, page_id = check_game_exists(title)
     if exists_by_title:
-        # Step 3: TRANSITIONAL LOGIC - Aggiorna entry esistente
+        # Step 3: TRANSITIONAL LOGIC - Update existing entry
         if external_id and store_name and page_id:
             update_external_id(page_id, external_id, store_name)
-            return "skipped (updated)"  # ✓ Aggiornato
+            return "skipped (updated)"  # ✓ Updated
 
-        return "skipped"  # ✓ Esistente (senza update)
+        return "skipped"  # ✓ Existing (without update)
 
-    # Step 4: Non esiste, crea nuovo
+    # Step 4: Doesn't exist, create new
     create_new_entry(...)
     return "added"
 ```
 
-### Metodo di Aggiornamento
+### Update Method
 
 ```python
 def _update_external_id(self, page_id, external_id, store_name):
     """
-    Aggiorna una entry esistente con external_id e store_name
+    Updates an existing entry with external_id and store_name
     """
     self.client.pages.update(
         page_id=page_id,
@@ -188,64 +188,64 @@ def _update_external_id(self, page_id, external_id, store_name):
 
 ---
 
-## Casi d'Uso
+## Use Cases
 
-### Caso 1: Database con 100 Giochi Esistenti
+### Case 1: Database with 100 Existing Games
 
-**Stato Iniziale:**
-- 100 giochi nel database Notion
-- Nessuno ha `external_id` o `store_name`
+**Initial State:**
+- 100 games in Notion database
+- None have `external_id` or `store_name`
 
-**Prima Esecuzione (dopo upgrade):**
+**First Run (after upgrade):**
 ```
 Added: 0
 Skipped: 100
-Updated: 100  ← Tutti aggiornati automaticamente
+Updated: 100  ← All updated automatically
 ```
 
-**Seconda Esecuzione:**
+**Second Run:**
 ```
 Added: 0
 Skipped: 100
-Updated: 0    ← Nessun update necessario
+Updated: 0    ← No update needed
 ```
 
 ---
 
-### Caso 2: Database Misto (Parzialmente Migrato)
+### Case 2: Mixed Database (Partially Migrated)
 
-**Stato Iniziale:**
-- 50 giochi con `external_id` (già migrati)
-- 50 giochi senza `external_id` (legacy)
+**Initial State:**
+- 50 games with `external_id` (already migrated)
+- 50 games without `external_id` (legacy)
 
-**Esecuzione:**
+**Execution:**
 ```
 [1/100] --- Portal™ ---
-⊘ Already exists (skipped)  ← Ha già external_id
+⊘ Already exists (skipped)  ← Already has external_id
 
 [51/100] --- Dota 2 ---
-⊘ Already exists, updated with external_id (skipped)  ← Legacy, aggiornato
+⊘ Already exists, updated with external_id (skipped)  ← Legacy, updated
 
 Added: 0
 Skipped: 100
-Updated: 50  ← Solo quelli legacy
+Updated: 50  ← Only legacy ones
 ```
 
 ---
 
-### Caso 3: Nuovi Giochi Acquistati
+### Case 3: New Games Purchased
 
-**Stato Iniziale:**
-- 100 giochi nel database (tutti con `external_id`)
-- Acquistati 10 nuovi giochi su Steam
+**Initial State:**
+- 100 games in database (all with `external_id`)
+- Purchased 10 new games on Steam
 
-**Esecuzione:**
+**Execution:**
 ```
 [1/110] --- Portal™ ---
-⊘ Already exists (skipped)  ← Controllo veloce con external_id
+⊘ Already exists (skipped)  ← Fast check with external_id
 
 [101/110] --- New Game ---
-✓ Game Added to Database  ← Nuovo gioco, creato
+✓ Game Added to Database  ← New game, created
 
 Added: 10
 Skipped: 100
@@ -254,206 +254,206 @@ Updated: 0
 
 ---
 
-## Gestione Errori
+## Error Handling
 
-### Errore: Proprietà Mancanti
+### Error: Missing Properties
 
-Se vedi questo errore:
+If you see this error:
 ```
 Warning: Could not update page XYZ with external_id: ...
 ⚠️  IMPORTANT: Please add 'External ID' and 'Store Name' properties to your Notion database!
    See MIGRATION_GUIDE.md for instructions
 ```
 
-**Soluzione:**
-1. Apri Notion
-2. Aggiungi le due proprietà mancanti
-3. Riprova l'esecuzione
+**Solution:**
+1. Open Notion
+2. Add the two missing properties
+3. Retry execution
 
 ---
 
-### Errore: Titoli con Caratteri Speciali
+### Error: Special Character Titles
 
-Se hai giochi con titoli che includono `™`, `®`, `©`, ecc.:
+If you have games with titles including `™`, `®`, `©`, etc.:
 
-**Prima (crash):**
+**Before (crash):**
 ```
 Error: 'latin-1' codec can't encode character '\u2122'
 ```
 
-**Dopo (funziona):**
+**After (works):**
 ```
 [42/100] --- Adding Portal™ ---
 ⊘ Game 'Portal™' already exists, updated with external_id (skipped)
 ```
 
-✅ **Risolto automaticamente** dalla fix UTF-8
+✅ **Automatically fixed** by UTF-8 fix
 
 ---
 
-## Vantaggi della Migrazione Automatica
+## Benefits of Automatic Migration
 
-### 1. Zero Intervento Manuale
-- ✅ Non devi cancellare entry esistenti
-- ✅ Non devi modificare manualmente i campi
-- ✅ Non devi fare export/import
+### 1. Zero Manual Intervention
+- ✅ No need to delete existing entries
+- ✅ No need to manually edit fields
+- ✅ No need to export/import
 
-### 2. Nessuna Perdita di Dati
-- ✅ Status, rating, note personalizzate rimangono
-- ✅ Relazioni con altre pagine preservate
-- ✅ Nessun downtime
+### 2. No Data Loss
+- ✅ Status, ratings, personal notes remain
+- ✅ Relations with other pages preserved
+- ✅ No downtime
 
-### 3. Idempotente
-- ✅ Puoi eseguire più volte senza problemi
-- ✅ Aggiorna solo ciò che manca
-- ✅ Non sovrascrive dati esistenti
+### 3. Idempotent
+- ✅ Can run multiple times without issues
+- ✅ Only updates what's missing
+- ✅ Doesn't overwrite existing data
 
 ### 4. Backward Compatible
-- ✅ Se non hai i campi, usa titolo (come prima)
-- ✅ Se hai i campi, usa external_id (più robusto)
-- ✅ Graduale transizione
+- ✅ If you don't have fields, uses title (as before)
+- ✅ If you have fields, uses external_id (more robust)
+- ✅ Gradual transition
 
 ---
 
-## Timeline di Migrazione
+## Migration Timeline
 
-### T0: Prima dell'Upgrade
+### T0: Before Upgrade
 ```
-Database Notion:
+Notion Database:
 ├── Portal™ (title only)
 ├── Dota 2 (title only)
 └── ...
 
-Duplicate Check: Solo titolo (~80% accuratezza)
+Duplicate Check: Title only (~80% accuracy)
 ```
 
-### T1: Aggiungi Campi Notion
+### T1: Add Notion Fields
 ```
-Database Notion:
+Notion Database:
 ├── Portal™ (title, external_id=empty, store_name=empty)
 ├── Dota 2 (title, external_id=empty, store_name=empty)
 └── ...
 
-Duplicate Check: Solo titolo (campi vuoti)
+Duplicate Check: Title only (fields empty)
 ```
 
-### T2: Prima Esecuzione Script Aggiornato
+### T2: First Run of Updated Script
 ```
-Database Notion:
-├── Portal™ (title, external_id=400, store_name=Steam) ← Aggiornato
-├── Dota 2 (title, external_id=570, store_name=Steam) ← Aggiornato
+Notion Database:
+├── Portal™ (title, external_id=400, store_name=Steam) ← Updated
+├── Dota 2 (title, external_id=570, store_name=Steam) ← Updated
 └── ...
 
-Duplicate Check: Usa external_id quando disponibile
-Migration: In corso...
+Duplicate Check: Uses external_id when available
+Migration: In progress...
 ```
 
-### T3: Migrazione Completata
+### T3: Migration Complete
 ```
-Database Notion:
+Notion Database:
 ├── Portal™ (title, external_id=400, store_name=Steam) ✓
 ├── Dota 2 (title, external_id=570, store_name=Steam) ✓
 └── ...
 
-Duplicate Check: 100% external_id (100% accuratezza)
-Migration: Completata ✓
+Duplicate Check: 100% external_id (100% accuracy)
+Migration: Complete ✓
 ```
 
 ---
 
 ## FAQ
 
-### Q: Devo cancellare i giochi esistenti?
-**A:** No! Il sistema aggiorna automaticamente quelli esistenti.
+### Q: Do I need to delete existing games?
+**A:** No! The system automatically updates existing ones.
 
-### Q: Cosa succede ai miei rating e note personalizzate?
-**A:** Rimangono intatti. L'update modifica solo `external_id` e `store_name`.
+### Q: What happens to my ratings and personal notes?
+**A:** They remain intact. The update only modifies `external_id` and `store_name`.
 
-### Q: Posso interrompere lo script a metà?
-**A:** Sì, puoi riprendere in sicurezza. Gli aggiornamenti già fatti rimangono.
+### Q: Can I interrupt the script halfway?
+**A:** Yes, you can resume safely. Updates already made will remain.
 
-### Q: Quanto tempo ci vuole per migrare 500 giochi?
-**A:** ~5-10 minuti. Ogni update è una chiamata API Notion (veloce).
+### Q: How long does it take to migrate 500 games?
+**A:** ~5-10 minutes. Each update is a Notion API call (fast).
 
-### Q: I giochi verranno duplicati?
-**A:** No, il controllo titolo + update previene duplicati.
+### Q: Will games be duplicated?
+**A:** No, the title check + update prevents duplicates.
 
-### Q: Cosa succede se eseguo lo script prima di aggiungere i campi Notion?
-**A:** Vedrai warning ma lo script continua a funzionare (fallback a titolo).
+### Q: What if I run the script before adding Notion fields?
+**A:** You'll see warnings but the script continues to work (falls back to title).
 
-### Q: Devo fare qualcosa dopo la migrazione?
-**A:** No, la seconda esecuzione userà automaticamente `external_id` (più veloce).
+### Q: Do I need to do anything after migration?
+**A:** No, the second run will automatically use `external_id` (faster).
 
 ---
 
-## Verifica Migrazione Completata
+## Verify Migration Complete
 
-### Check 1: Log dello Script
+### Check 1: Script Log
 ```bash
 grep "updated with external_id" script_output.log | wc -l
-# Dovrebbe mostrare il numero di giochi aggiornati
+# Should show the number of games updated
 ```
 
-### Check 2: Database Notion
+### Check 2: Notion Database
 ```
-Apri un gioco a caso
+Open a random game
 ↓
-Verifica che "External ID" e "Store Name" siano popolati
+Verify that "External ID" and "Store Name" are populated
 ```
 
-### Check 3: Seconda Esecuzione
+### Check 3: Second Run
 ```bash
 python main.py
 
-# Se vedi solo:
+# If you only see:
 # "⊘ Game 'XXX' already exists in database (skipped)"
-# (senza "updated with external_id")
-# → Migrazione completata ✓
+# (without "updated with external_id")
+# → Migration complete ✓
 ```
 
 ---
 
-## Rollback (Se Necessario)
+## Rollback (If Necessary)
 
-Se vuoi annullare la migrazione:
+If you want to undo the migration:
 
-### Opzione 1: Manuale (Notion)
-1. Apri database Notion
-2. Seleziona colonna "External ID"
-3. Delete → Conferma
-4. Ripeti per "Store Name"
+### Option 1: Manual (Notion)
+1. Open Notion database
+2. Select "External ID" column
+3. Delete → Confirm
+4. Repeat for "Store Name"
 
-### Opzione 2: Codice Legacy
+### Option 2: Legacy Code
 ```bash
 git checkout <previous-commit>
-# Torna alla versione senza external_id
+# Return to version without external_id
 ```
 
-**Nota:** I campi `external_id` e `store_name` rimangono in Notion ma vengono ignorati.
+**Note:** The `external_id` and `store_name` fields remain in Notion but are ignored.
 
 ---
 
-## Conclusione
+## Conclusion
 
-La **migrazione automatica** ti permette di:
+**Automatic migration** allows you to:
 
-✅ Aggiornare il sistema senza perdita dati
-✅ Nessun intervento manuale richiesto
-✅ Transizione graduale e sicura
-✅ Duplicate detection migliorato (100% accuratezza)
-✅ Performance migliorate su esecuzioni successive
+✅ Update the system without data loss
+✅ No manual intervention required
+✅ Gradual and safe transition
+✅ Improved duplicate detection (100% accuracy)
+✅ Better performance on subsequent runs
 
-**Basta eseguire lo script una volta e il sistema migra automaticamente!** 🎉
+**Just run the script once and the system migrates automatically!** 🎉
 
 ---
 
-## Supporto
+## Support
 
-Se incontri problemi durante la migrazione:
+If you encounter problems during migration:
 
-1. **Controlla i log:** Esegui con `--debug`
-2. **Verifica proprietà Notion:** "External ID" e "Store Name" devono esistere
-3. **Controlla messaggi warning:** Spiegano cosa è andato storto
-4. **Leggi MIGRATION_GUIDE.md:** Istruzioni dettagliate
+1. **Check logs:** Run with `--debug`
+2. **Verify Notion properties:** "External ID" and "Store Name" must exist
+3. **Check warning messages:** They explain what went wrong
+4. **Read MIGRATION_GUIDE.md:** Detailed instructions
 
-**La migrazione è testata e sicura!** 🛡️
+**Migration is tested and safe!** 🛡️

@@ -15,6 +15,9 @@ class NormalizedGame(TypedDict):
         release_date: Release date in YYYY-MM-DD format
         genres: List of genre names (e.g., ['Action', 'Adventure'])
         game_modes: List of game modes (e.g., ['Single player', 'Multiplayer'])
+        achievement_percentage: Achievement completion percentage (0-100)
+        last_played: Last played date in YYYY-MM-DD format
+        status: Game status (Currently Playing, Backlog, Complete, On Hold, Abandoned)
     """
     appid: int | str
     name: str
@@ -24,6 +27,9 @@ class NormalizedGame(TypedDict):
     release_date: NotRequired[str]
     genres: NotRequired[list[str]]
     game_modes: NotRequired[list[str]]
+    achievement_percentage: NotRequired[float]
+    last_played: NotRequired[str]
+    status: NotRequired[str]
 
 class StoreIntegrationProtocol(Protocol):
     """

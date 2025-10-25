@@ -1,37 +1,37 @@
-# Quick Migration Guide per Utenti Esistenti
+# Quick Migration Guide for Existing Users
 
-## TL;DR - 3 Passi Rapidi
+## TL;DR - 3 Quick Steps
 
-Se hai **già giochi nel database Notion**, segui questi 3 semplici passi:
+If you **already have games in your Notion database**, follow these 3 simple steps:
 
-### 1. Aggiungi 2 Campi a Notion (2 minuti)
+### 1. Add 2 Fields to Notion (2 minutes)
 
-Apri il tuo database Notion e aggiungi:
+Open your Notion database and add:
 
-- ✅ **"External ID"** (tipo: Text)
-- ✅ **"Store Name"** (tipo: Text)
+- ✅ **"External ID"** (type: Text)
+- ✅ **"Store Name"** (type: Text)
 
-**Come fare:**
-1. Click sul "+" in alto a destra nella tabella
-2. Seleziona "Text"
-3. Nomina esattamente: "External ID"
-4. Ripeti per "Store Name"
+**How to do it:**
+1. Click the "+" at the top-right of the table
+2. Select "Text"
+3. Name it exactly: "External ID"
+4. Repeat for "Store Name"
 
 ---
 
-### 2. Esegui lo Script (Una Volta)
+### 2. Run the Script (Once)
 
 ```bash
 cd "d:\Projects\Game-Backlog-Assistant"
 python main.py
 ```
 
-**Cosa succede:**
-- ✅ Trova i tuoi giochi esistenti per titolo
-- ✅ Li aggiorna con `external_id` e `store_name`
-- ✅ Non crea duplicati
+**What happens:**
+- ✅ Finds your existing games by title
+- ✅ Updates them with `external_id` and `store_name`
+- ✅ Doesn't create duplicates
 
-**Output Atteso:**
+**Expected Output:**
 ```
 [1/100] --- Adding Portal™ ---
 ✓ Updated existing entry with external_id=400, store=Steam
@@ -49,81 +49,81 @@ Added: 0 | Skipped: 100 | Errors: 0
 
 ---
 
-### 3. Verifica in Notion (30 secondi)
+### 3. Verify in Notion (30 seconds)
 
-Apri un gioco qualsiasi e verifica che abbia:
-- **External ID:** `570` (esempio: Dota 2)
+Open any game and verify it has:
+- **External ID:** `570` (example: Dota 2)
 - **Store Name:** `Steam`
 
-✅ **Fatto!** I tuoi giochi sono ora aggiornati.
+✅ **Done!** Your games are now updated.
 
 ---
 
-## Cosa Cambia per Te
+## What Changes for You
 
-### Prima dell'Aggiornamento
+### Before the Update
 ```
-Database Notion:
-├── Portal™ (solo titolo)
-├── Dota 2 (solo titolo)
+Notion Database:
+├── Portal™ (title only)
+├── Dota 2 (title only)
 └── ...
 
-Duplicate Check: Controllo per titolo (~80% affidabile)
+Duplicate Check: Title-based (~80% reliable)
 ```
 
-### Dopo l'Aggiornamento
+### After the Update
 ```
-Database Notion:
-├── Portal™ (titolo + external_id=400 + store=Steam) ✓
-├── Dota 2 (titolo + external_id=570 + store=Steam) ✓
+Notion Database:
+├── Portal™ (title + external_id=400 + store=Steam) ✓
+├── Dota 2 (title + external_id=570 + store=Steam) ✓
 └── ...
 
-Duplicate Check: Controllo per external_id (100% affidabile)
+Duplicate Check: External ID-based (100% reliable)
 ```
 
 ---
 
-## FAQ Rapide
+## Quick FAQ
 
-### Q: Perderò i miei dati?
-**A:** NO! Status, rating, note rimangono intatti. Aggiungiamo solo 2 campi.
+### Q: Will I lose my data?
+**A:** NO! Status, ratings, notes remain intact. We only add 2 fields.
 
-### Q: Creerà duplicati?
-**A:** NO! Il sistema trova i giochi esistenti e li aggiorna, non li duplica.
+### Q: Will it create duplicates?
+**A:** NO! The system finds existing games and updates them, doesn't duplicate.
 
-### Q: Devo cancellare i giochi esistenti?
-**A:** NO! Il sistema li aggiorna automaticamente.
+### Q: Do I need to delete existing games?
+**A:** NO! The system updates them automatically.
 
-### Q: Quanto tempo ci vuole?
-**A:** ~2-5 minuti per aggiungere i campi + 5-10 minuti per l'esecuzione.
+### Q: How long does it take?
+**A:** ~2-5 minutes to add fields + 5-10 minutes for the script to run.
 
-### Q: Posso testare prima?
-**A:** SÌ! Il sistema non sovrascrive nulla, solo aggiunge i 2 nuovi campi.
-
----
-
-## Benefici Immediati
-
-✅ **UTF-8:** Niente più crash su giochi come "Portal™", "Pokémon"
-✅ **Cache:** Seconda esecuzione 30x più veloce (30s invece di 15min)
-✅ **Duplicati:** 100% accuratezza (non più titoli simili)
-✅ **Rate Limiting:** Retry automatico con exponential backoff
+### Q: Can I test first?
+**A:** YES! The system doesn't overwrite anything, only adds the 2 new fields.
 
 ---
 
-## Supporto
+## Immediate Benefits
 
-- **Dettagli completi:** [TRANSITIONAL_MIGRATION.md](TRANSITIONAL_MIGRATION.md)
-- **Guida completa:** [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md)
-- **Documentazione tecnica:** [FIXES_DOCUMENTATION.md](FIXES_DOCUMENTATION.md)
+✅ **UTF-8:** No more crashes on games like "Portal™", "Pokémon"
+✅ **Cache:** Second run 30x faster (30s instead of 15min)
+✅ **Duplicates:** 100% accuracy (no more similar titles)
+✅ **Rate Limiting:** Automatic retry with exponential backoff
 
 ---
 
-## Checklist Veloce
+## Support
 
-- [ ] Aggiunti campi "External ID" e "Store Name" a Notion
-- [ ] Eseguito `python main.py` una volta
-- [ ] Verificato che i giochi hanno external_id popolato
-- [ ] Tutto funziona! 🎉
+- **Complete details:** [Transitional Migration](03_TRANSITIONAL_MIGRATION.md)
+- **Full guide:** [Complete Migration Guide](04_MIGRATION_GUIDE.md)
+- **Technical documentation:** [Fixes Documentation](05_FIXES_DOCUMENTATION.md)
 
-**Benvenuto alla nuova versione migliorata!** 🚀
+---
+
+## Quick Checklist
+
+- [ ] Added "External ID" and "Store Name" fields to Notion
+- [ ] Ran `python main.py` once
+- [ ] Verified that games have external_id populated
+- [ ] Everything works! 🎉
+
+**Welcome to the improved version!** 🚀

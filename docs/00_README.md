@@ -22,6 +22,7 @@ Complete documentation for the Game Backlog Assistant project.
 - **[Complete Migration Guide](04_MIGRATION_GUIDE.md)** - Detailed migration instructions with testing
 - **[Fixes Documentation](05_FIXES_DOCUMENTATION.md)** - Technical details of all bug fixes
 - **[Implementation Summary](06_IMPLEMENTATION_SUMMARY.md)** - Quick reference for developers
+- **[Sync Status Guide](07_SYNC_STATUS_GUIDE.md)** - Achievement tracking and status sync features
 
 ---
 
@@ -57,6 +58,7 @@ Complete documentation for the Game Backlog Assistant project.
 | Understand how migration works | [Transitional Migration](03_TRANSITIONAL_MIGRATION.md) |
 | Troubleshoot issues | [Complete Migration Guide](04_MIGRATION_GUIDE.md) - Section 6 |
 | See what bugs were fixed | [Fixes Documentation](05_FIXES_DOCUMENTATION.md) |
+| Learn about achievement tracking | [Sync Status Guide](07_SYNC_STATUS_GUIDE.md) |
 
 ### For Developers
 
@@ -96,6 +98,7 @@ docs/
 ├── 04_MIGRATION_GUIDE.md                 # Complete migration guide
 ├── 05_FIXES_DOCUMENTATION.md             # Technical bug fixes
 ├── 06_IMPLEMENTATION_SUMMARY.md          # Developer summary
+├── 07_SYNC_STATUS_GUIDE.md               # Status sync & achievements
 ├── architecture/
 │   ├── ARCHITECTURE.md                   # System architecture
 │   ├── DESIGN_PRINCIPLES.md              # Design patterns

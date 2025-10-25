@@ -396,7 +396,227 @@ class SteamIntegration(StoreIntegrationProtocol):
             game_modes.append('Massively Multiplayer Online (MMO)')
 
         return game_modes if game_modes else None
-    
+
+    def get_player_achievements(self, appid):
+        """
+        Get player achievements for a specific game.
+
+        Args:
+            appid: Steam App ID
+
+        Returns:
+            Dictionary with achievement data including percentage completion,
+            or None if game has no achievements or API call fails
+        """
+        # Check cache first
+        cache_key = f"achievements_{appid}"
+        cached_data = self._get_from_cache(cache_key)
+        if cached_data is not None:
+            return cached_data
+
+        # Not in cache, fetch from API
+        self._smart_rate_limit()
+
+        url = f'https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v1/'
+        params = {
+            'key': self.api_key,
+            'steamid': self.steamid,
+            'appid': appid
+        }
+
+        max_retries = 2
+        base_delay = 2
+
+        for attempt in range(max_retries):
+            try:
+                response = requests.get(url, params=params, timeout=10)
+
+                if response.status_code == 200:
+                    data = response.json()
+                    playerstats = data.get('playerstats', {})
+
+                    # Check if the request was successful
+                    if playerstats.get('success'):
+                        achievements = playerstats.get('achievements', [])
+                        if not achievements:
+                            # Game has no achievements
+                            result = {'has_achievements': False, 'percentage': 0}
+                            self._save_to_cache(cache_key, result)
+                            return result
+
+                        total = len(achievements)
+                        # Count achievements where 'achieved' is truthy (1, True, or "1")
+                        unlocked = sum(1 for ach in achievements if ach.get('achieved'))
+                        percentage = (unlocked / total * 100) if total > 0 else 0
+
+                        result = {
+                            'has_achievements': True,
+                            'total': total,
+                            'unlocked': unlocked,
+                            'percentage': round(percentage, 2)
+                        }
+                        self._save_to_cache(cache_key, result)
+                        print(f"✅ Achievements for appid {appid}: {unlocked}/{total} ({percentage:.1f}%)")
+                        return result
+                    else:
+                        # Check if error message indicates no achievements
+                        error = playerstats.get('error', '')
+                        if 'not have stats' in error.lower() or 'game schema' in error.lower():
+                            result = {'has_achievements': False, 'percentage': 0}
+                            self._save_to_cache(cache_key, result)
+                            return result
+
+                        # Game doesn't have achievements or stats not public
+                        print(f"⚠️ Steam API returned success=False for appid {appid}: {error}")
+                        result = {'has_achievements': False, 'percentage': 0}
+                        self._save_to_cache(cache_key, result)
+                        return result
+
+                elif response.status_code == 400:
+                    # Game has no achievement schema
+                    result = {'has_achievements': False, 'percentage': 0}
+                    self._save_to_cache(cache_key, result)
+                    return result
+
+                elif response.status_code == 429:
+                    retry_delay = base_delay * (2 ** attempt)
+                    self.min_interval_when_limited = min(3.0, self.min_interval_when_limited * 1.5)
+
+                    if attempt < max_retries - 1:
+                        print(f"⏳ Rate limited, waiting {retry_delay}s...")
+                        time.sleep(retry_delay)
+                        continue
+
+            except Exception as e:
+                print(f"⚠️ Error fetching achievements for appid {appid}: {e}")
+                if attempt < max_retries - 1:
+                    time.sleep(base_delay)
+                    continue
+
+        return None
+
+    def get_recently_played_games(self):
+        """
+        Get recently played games with playtime information.
+
+        Returns:
+            Dictionary mapping appid to last played timestamp and playtime
+        """
+        # Check cache first
+        cache_key = "recently_played"
+        cached_data = self._get_from_cache(cache_key)
+        if cached_data is not None:
+            return cached_data
+
+        self._smart_rate_limit()
+
+        url = f'https://api.steampowered.com/IPlayerService/GetRecentlyPlayedGames/v1/'
+        params = {
+            'key': self.api_key,
+            'steamid': self.steamid,
+            'count': 0  # 0 means return all
+        }
+
+        try:
+            response = requests.get(url, params=params, timeout=10)
+            if response.status_code == 200:
+                data = response.json()
+                games = data.get('response', {}).get('games', [])
+
+                result = {}
+                for game in games:
+                    appid = game.get('appid')
+                    if appid:
+                        result[str(appid)] = {
+                            'playtime_forever': game.get('playtime_forever', 0),
+                            'playtime_2weeks': game.get('playtime_2weeks', 0)
+                        }
+
+                self._save_to_cache(cache_key, result)
+                print(f"✅ Retrieved recently played data for {len(result)} games")
+                return result
+
+        except Exception as e:
+            print(f"⚠️ Error fetching recently played games: {e}")
+
+        return {}
+
+    def calculate_status(self, last_played_date, achievement_percentage):
+        """
+        Calculate game status based on last played date and achievement completion.
+
+        Args:
+            last_played_date: Last played date as datetime object or None
+            achievement_percentage: Achievement completion percentage (0-100)
+
+        Returns:
+            Status string: Currently Playing, Backlog, Complete, On Hold, or Abandoned
+        """
+        from datetime import datetime, timedelta
+
+        # Complete: all achievements completed
+        if achievement_percentage == 100:
+            return "Complete"
+
+        # Never played
+        if last_played_date is None:
+            return "Backlog"
+
+        now = datetime.now()
+        time_since_played = now - last_played_date
+
+        # Currently Playing: last session within 1 month
+        if time_since_played <= timedelta(days=30):
+            return "Currently Playing"
+
+        # On Hold: last session within 1 year
+        if time_since_played <= timedelta(days=365):
+            return "On Hold"
+
+        # Abandoned: last session more than 2 years ago
+        if time_since_played > timedelta(days=730):
+            return "Abandoned"
+
+        # Default to On Hold for anything between 1-2 years
+        return "On Hold"
+
+    def get_enriched_game_data(self, appid, include_achievements=True):
+        """
+        Get enriched game data including achievements and status for a specific game.
+        This method is used for updating existing Notion entries with fresh data.
+
+        Args:
+            appid: Steam App ID
+            include_achievements: Whether to fetch achievement data (default: True)
+
+        Returns:
+            Dictionary with achievement_percentage and status, or empty dict if game not found
+        """
+        result = {}
+
+        if include_achievements:
+            # Get achievement data
+            achievement_data = self.get_player_achievements(appid)
+            if achievement_data and achievement_data.get('has_achievements'):
+                result['achievement_percentage'] = achievement_data.get('percentage', 0)
+            else:
+                result['achievement_percentage'] = 0
+
+            # Get owned games to check last played
+            games = self.get_games_from_api()
+            game_data = next((g for g in games if g['appid'] == int(appid)), None)
+
+            last_played = None
+            if game_data and game_data.get('rtime_last_played', 0) > 0:
+                from datetime import datetime
+                last_played = datetime.fromtimestamp(game_data['rtime_last_played'])
+
+            # Calculate status
+            status = self.calculate_status(last_played, result.get('achievement_percentage', 0))
+            result['status'] = status
+
+        return result
+
 if __name__ == "__main__":
     print("🚀 Starting Steam Integration Test")
     print("=" * 60)

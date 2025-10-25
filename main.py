@@ -42,7 +42,17 @@ def handle_game_genres(title, debug=False):
     
     return genres
 
-def handle_game_modes(title):
+def handle_game_modes(title, debug=False):
+    """
+    Get game modes for a given title.
+
+    Args:
+        title: Game title
+        debug: Enable debug output (default: False)
+
+    Returns:
+        List of game mode dictionaries
+    """
     online = []
     game_mode_data = get_game_modes(title)
     if game_mode_data is not None:
@@ -112,91 +122,157 @@ def _print_optimization_stats(sources_used, debug):
             print(f'   IGDB called for: {", ".join(sources_used["igdb"])}')
 
 
-def write_game(notion, game_data, debug=False):
+def write_game(notion, game_data, store_integration=None, debug=False):
     """
-    Write game to Notion, using store data when available to minimize IGDB calls.
+    Write game to Notion or update existing game, using store data when available.
 
     Args:
         notion: NotionIntegration instance
         game_data: Normalized game dictionary from store integration
+        store_integration: Store integration instance (SteamIntegration, GogIntegration, etc.)
         debug: Enable debug output
 
     Returns:
-        str: Status - 'added', 'skipped', or 'error'
+        str: Status - 'added', 'updated', 'skipped', or 'error'
     """
     title = game_data['name']
-    print(f'--- Adding {title} ---')
+    external_id = game_data.get('external_id', '')
+    store_relation_id = game_data.get('notion_store_id', '')
 
-    sources_used = {'store': [], 'igdb': []}
+    # Check if game already exists in Notion
+    exists, page_id = notion.check_game_exists_by_external_id(
+        NOTION_DATABASE_ID,
+        external_id,
+        store_relation_id
+    ) if external_id and store_relation_id else (False, None)
 
-    try:
-        # Get platforms
-        platforms_data, platforms_source = _get_field_or_fallback(
-            game_data, 'platforms', title, handle_game_platforms, debug
-        )
-        consoles = _convert_to_notion_multiselect(platforms_data) if platforms_source == 'store' else platforms_data
-        sources_used[platforms_source].append('platforms')
+    if exists:
+        print(f'--- Updating {title} ---')
+        # Game exists - update status and achievements if not complete
+        try:
+            # Get current status from Notion to check if already complete
+            # For now, we'll attempt to update all existing games
 
-        # Get release date
-        if 'release_date' in game_data and game_data['release_date']:
-            release_date = (game_data['release_date'], False)
-            sources_used['store'].append('release_date')
-            if debug:
-                print(f'✓ Using release_date from store: {game_data["release_date"]}')
-        else:
-            release_date = handle_game_release(title, debug)
-            sources_used['igdb'].append('release_date')
+            # Fetch enriched data from store (achievements, status)
+            if store_integration and hasattr(store_integration, 'get_enriched_game_data'):
+                enriched_data = store_integration.get_enriched_game_data(external_id)
 
-        # Get genres
-        genres_data, genres_source = _get_field_or_fallback(
-            game_data, 'genres', title, handle_game_genres, debug
-        )
-        genres = _convert_to_notion_multiselect(genres_data) if genres_source == 'store' else genres_data
-        sources_used[genres_source].append('genres')
+                if enriched_data:
+                    achievement_pct = enriched_data.get('achievement_percentage', 0)
+                    new_status = enriched_data.get('status', 'Backlog')
 
-        # Get game modes
-        modes_data, modes_source = _get_field_or_fallback(
-            game_data, 'game_modes', title, handle_game_modes, debug
-        )
-        online = _convert_to_notion_multiselect(modes_data) if modes_source == 'store' else modes_data
-        sources_used[modes_source].append('game_modes')
+                    print(f'📊 Achievements: {achievement_pct}%')
+                    print(f'🎯 Status: {new_status}')
 
-        # Get cover
-        cover, cover_source = _get_field_or_fallback(
-            game_data, 'cover_url', title, handle_game_cover, debug
-        )
-        sources_used[cover_source].append('cover')
+                    # Update Notion with new status and achievements
+                    success, message = notion.update_game_status_and_achievements(
+                        page_id,
+                        status=new_status,
+                        achievement_percentage=achievement_pct
+                    )
 
-        # HowLongToBeat: Always required (no store provides this)
-        length = handle_game_length(title)
+                    if success:
+                        print(f'✓ Game Updated: {message}')
+                        return 'updated'
+                    else:
+                        print(f'⚠ Update failed: {message}')
+                        return 'error'
+                else:
+                    print('⊘ No enriched data available, skipping update')
+                    return 'skipped'
+            else:
+                print('⊘ Store does not support status sync, skipping update')
+                return 'skipped'
 
-        # Write to Notion (with duplicate checking using external_id + store)
-        created, message = notion.write_row(
-            NOTION_DATABASE_ID,
-            cover,
-            title,
-            consoles,
-            release_date,
-            online,
-            genres,
-            length,
-            game_data['notion_store_id'],
-            external_id=game_data.get('external_id'),  # Steam App ID or GOG product ID
-            store_name=game_data.get('store_name'),  # 'Steam' or 'GOG'
-            skip_duplicates=True  # Skip if already exists
-        )
+        except Exception as e:
+            print(f'✗ Error updating: {e}')
+            return 'error'
 
-        if created:
-            _print_optimization_stats(sources_used, debug)
-            print('✓ Game Added to Database')
-            return 'added'
-        else:
-            print(f'⊘ {message}')
-            return 'skipped'
+    else:
+        print(f'--- Adding {title} ---')
+        # Game doesn't exist - add it with full details
+        sources_used = {'store': [], 'igdb': []}
 
-    except Exception as e:
-        print(f'✗ Error: {e}')
-        return 'error'
+        try:
+            # Get platforms
+            platforms_data, platforms_source = _get_field_or_fallback(
+                game_data, 'platforms', title, handle_game_platforms, debug
+            )
+            consoles = _convert_to_notion_multiselect(platforms_data) if platforms_source == 'store' else platforms_data
+            sources_used[platforms_source].append('platforms')
+
+            # Get release date
+            if 'release_date' in game_data and game_data['release_date']:
+                release_date = (game_data['release_date'], False)
+                sources_used['store'].append('release_date')
+                if debug:
+                    print(f'✓ Using release_date from store: {game_data["release_date"]}')
+            else:
+                release_date = handle_game_release(title, debug)
+                sources_used['igdb'].append('release_date')
+
+            # Get genres
+            genres_data, genres_source = _get_field_or_fallback(
+                game_data, 'genres', title, handle_game_genres, debug
+            )
+            genres = _convert_to_notion_multiselect(genres_data) if genres_source == 'store' else genres_data
+            sources_used[genres_source].append('genres')
+
+            # Get game modes
+            modes_data, modes_source = _get_field_or_fallback(
+                game_data, 'game_modes', title, handle_game_modes, debug
+            )
+            online = _convert_to_notion_multiselect(modes_data) if modes_source == 'store' else modes_data
+            sources_used[modes_source].append('game_modes')
+
+            # Get cover
+            cover, cover_source = _get_field_or_fallback(
+                game_data, 'cover_url', title, handle_game_cover, debug
+            )
+            sources_used[cover_source].append('cover')
+
+            # HowLongToBeat: Always required (no store provides this)
+            length = handle_game_length(title)
+
+            # Get initial status and achievements from store if available
+            initial_status = 'Backlog'
+            achievement_pct = 0
+
+            if store_integration and hasattr(store_integration, 'get_enriched_game_data'):
+                enriched_data = store_integration.get_enriched_game_data(external_id)
+                if enriched_data:
+                    achievement_pct = enriched_data.get('achievement_percentage', 0)
+                    initial_status = enriched_data.get('status', 'Backlog')
+                    print(f'📊 Initial Achievements: {achievement_pct}%')
+                    print(f'🎯 Initial Status: {initial_status}')
+
+            # Write to Notion with initial status and achievements
+            created, message = notion.write_row(
+                NOTION_DATABASE_ID,
+                cover,
+                title,
+                consoles,
+                release_date,
+                online,
+                genres,
+                length,
+                game_data['notion_store_id'],
+                external_id=external_id,
+                initial_status=initial_status,
+                achievement_percentage=achievement_pct
+            )
+
+            if created:
+                _print_optimization_stats(sources_used, debug)
+                print('✓ Game Added to Database')
+                return 'added'
+            else:
+                print(f'⊘ {message}')
+                return 'skipped'
+
+        except Exception as e:
+            print(f'✗ Error: {e}')
+            return 'error'
 
 
 def _initialize_integrations():
@@ -213,8 +289,9 @@ def _initialize_integrations():
 
 
 def _fetch_all_games(integrations):
-    """Fetch games from all store integrations"""
+    """Fetch games from all store integrations and return with integration mapping"""
     games = []
+    game_to_integration = {}
 
     print(f"Fetching games from {len(integrations)} store(s)...")
     for integration in integrations:
@@ -222,24 +299,37 @@ def _fetch_all_games(integrations):
         print(f"  Loading {store_name} library...")
         owned_games = integration.get_owned_games()
         print(f"  Found {len(owned_games)} games in {store_name}")
+
+        # Map each game to its integration for later use
+        for game in owned_games:
+            game_key = f"{game.get('external_id', '')}_{game.get('store_name', '')}"
+            game_to_integration[game_key] = integration
+
         games.extend(owned_games)
 
-    return games
+    return games, game_to_integration
 
 
-def _process_game(notion, game, debug):
+def _process_game(notion, game, game_to_integration, debug):
     """
     Process a single game and write to Notion.
 
     Returns:
-        str: Status - 'added', 'skipped', or 'error'
+        str: Status - 'added', 'updated', 'skipped', or 'error'
     """
-    return write_game(notion, game, debug=debug)
+    # Get the store integration for this game
+    game_key = f"{game.get('external_id', '')}_{game.get('store_name', '')}"
+    store_integration = game_to_integration.get(game_key)
+
+    return write_game(notion, game, store_integration=store_integration, debug=debug)
 
 
 def main(debug=False):
     """
     Main entry point for syncing games to Notion.
+
+    This function now handles both adding new games and updating existing ones
+    with status and achievement data.
 
     Args:
         debug: Enable debug output (default: False)
@@ -251,26 +341,26 @@ def main(debug=False):
         print("Please set up Steam or GOG credentials in .env file.")
         return
 
-    games = _fetch_all_games(integrations)
+    games, game_to_integration = _fetch_all_games(integrations)
 
     if not games:
         print("No games found in any library.")
         return
 
     print(f"\nTotal games to process: {len(games)}")
-    print("🚀 Processing games (optimized mode)\n")
+    print("🚀 Processing games (unified add/update mode)\n")
 
     notion = NotionIntegration(NOTION_TOKEN)
 
     # Track statistics
-    stats = {'added': 0, 'skipped': 0, 'errors': 0}
+    stats = {'added': 0, 'updated': 0, 'skipped': 0, 'errors': 0}
 
     # Process each game
     for i, game in enumerate(games, 1):
         print(f"\n[{i}/{len(games)}]", end=' ')
 
         try:
-            status = _process_game(notion, game, debug)
+            status = _process_game(notion, game, game_to_integration, debug)
             stats[status] = stats.get(status, 0) + 1
 
         except Exception as e:
@@ -283,7 +373,7 @@ def main(debug=False):
     print("\n" + "="*60)
     print("✓ Sync completed!")
     print("="*60)
-    print(f"Added: {stats['added']} | Skipped: {stats['skipped']} | Errors: {stats['errors']}")
+    print(f"Added: {stats['added']} | Updated: {stats['updated']} | Skipped: {stats['skipped']} | Errors: {stats['errors']}")
 
 
 if __name__ == '__main__':

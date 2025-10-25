@@ -85,7 +85,7 @@ class NotionIntegration:
             # If check fails, assume it doesn't exist to avoid blocking
             return False, None
 
-    def check_game_exists_by_external_id(self, database_id, external_id, store_name):
+    def check_game_exists_by_external_id(self, database_id, external_id, store_relation_id):
         """
         Check if a game with the given external ID and store already exists in the database.
         This is a more robust duplicate check than title-based matching.
@@ -93,13 +93,13 @@ class NotionIntegration:
         Args:
             database_id: Notion database ID
             external_id: External store ID (e.g., Steam App ID)
-            store_name: Store name (e.g., "Steam", "GOG")
+            store_relation_id: Store relation ID (Notion page ID of the store)
 
         Returns:
             Tuple of (exists: bool, page_id: str or None)
         """
         try:
-            # Query using compound filter: External ID AND Store Name
+            # Query using compound filter: External ID AND Store relation
             response = self.client.databases.query(
                 database_id=database_id,
                 filter={
@@ -111,9 +111,9 @@ class NotionIntegration:
                             }
                         },
                         {
-                            "property": "Store Name",
-                            "rich_text": {
-                                "equals": store_name
+                            "property": "Store",
+                            "relation": {
+                                "contains": store_relation_id
                             }
                         }
                     ]
@@ -128,50 +128,99 @@ class NotionIntegration:
             return False, None
 
         except Exception as e:
-            print(f"Warning: Error checking for duplicate (external_id={external_id}, store={store_name}): {e}")
+            print(f"Warning: Error checking for duplicate (external_id={external_id}, store={store_relation_id}): {e}")
             # If check fails, fall back to title-based check to avoid blocking
             return False, None
 
-    def _update_external_id(self, page_id, external_id, store_name):
+    def get_all_games(self, database_id):
         """
-        Update an existing Notion page with external_id and store_name.
-        This is used for transitional migration of legacy entries.
+        Retrieve all games from Notion database with title, external_id, Store relation, and Status.
 
         Args:
-            page_id: Notion page ID to update
-            external_id: External store ID to add
-            store_name: Store name to add
+            database_id: Notion database ID
 
         Returns:
-            bool: True if update successful, False otherwise
+            List of dictionaries containing game data
         """
         try:
-            # Ensure UTF-8 encoding
-            def ensure_utf8(text):
-                if isinstance(text, str):
-                    return text.encode('utf-8', errors='replace').decode('utf-8')
-                return text
+            all_games = []
+            has_more = True
+            start_cursor = None
 
-            # Update the page properties
-            self.client.pages.update(
-                page_id=page_id,
-                properties={
-                    'External ID': {'rich_text': [{'text': {'content': ensure_utf8(str(external_id))}}]},
-                    'Store Name': {'rich_text': [{'text': {'content': ensure_utf8(store_name)}}]}
-                }
-            )
-            print(f"✓ Updated existing entry with external_id={external_id}, store={store_name}")
-            return True
+            while has_more:
+                query_params = {"database_id": database_id}
+                if start_cursor:
+                    query_params["start_cursor"] = start_cursor
+
+                response = self.client.databases.query(**query_params)
+
+                for page in response.get('results', []):
+                    properties = page.get('properties', {})
+
+                    # Extract title
+                    title_prop = properties.get('title', {}).get('title', [])
+                    title = title_prop[0].get('text', {}).get('content', '') if title_prop else ''
+
+                    # Extract external ID
+                    external_id_prop = properties.get('External ID', {}).get('rich_text', [])
+                    external_id = external_id_prop[0].get('text', {}).get('content', '') if external_id_prop else ''
+
+                    # Extract Store relation
+                    store_relation = properties.get('Store', {}).get('relation', [])
+                    store_id = store_relation[0].get('id', '') if store_relation else ''
+
+                    # Extract Status
+                    status_prop = properties.get('Status', {}).get('select', {})
+                    status = status_prop.get('name', '') if status_prop else ''
+
+                    all_games.append({
+                        'page_id': page['id'],
+                        'title': title,
+                        'external_id': external_id,
+                        'store_id': store_id,
+                        'status': status
+                    })
+
+                has_more = response.get('has_more', False)
+                start_cursor = response.get('next_cursor')
+
+            return all_games
 
         except Exception as e:
-            print(f"Warning: Could not update page {page_id} with external_id: {e}")
-            # Check if error is due to missing properties
-            if "External ID" in str(e) or "Store Name" in str(e):
-                print("⚠️  IMPORTANT: Please add 'External ID' and 'Store Name' properties to your Notion database!")
-                print("   See MIGRATION_GUIDE.md for instructions")
-            return False
+            print(f"Error retrieving games from Notion: {e}")
+            return []
 
-    def write_row(self, database_id, cover_link, title, consoles, release_date, online, genres, length, related_page_id, external_id=None, store_name=None, skip_duplicates=True):
+    def update_game_status_and_achievements(self, page_id, status=None, achievement_percentage=None):
+        """
+        Update game status and achievement percentage in Notion.
+
+        Args:
+            page_id: Notion page ID
+            status: Game status (Currently Playing, Backlog, Complete, On Hold, Abandoned)
+            achievement_percentage: Achievement completion percentage (0-100)
+
+        Returns:
+            Tuple of (success: bool, message: str)
+        """
+        try:
+            properties = {}
+
+            if status:
+                properties['Status'] = {'select': {'name': status}}
+
+            if achievement_percentage is not None:
+                properties['Achievements'] = {'number': achievement_percentage}
+
+            if properties:
+                self.client.pages.update(page_id=page_id, properties=properties)
+                return True, f"Updated game with status: {status}, achievements: {achievement_percentage}%"
+
+            return False, "No updates to apply"
+
+        except Exception as e:
+            return False, f"Error updating game: {e}"
+
+    def write_row(self, database_id, cover_link, title, consoles, release_date, online, genres, length, related_page_id, external_id=None, initial_status='Backlog', achievement_percentage=0):
         """
         Create a new game entry in Notion database.
 
@@ -186,37 +235,16 @@ class NotionIntegration:
             length: Hours to complete
             related_page_id: Store relation page ID
             external_id: External store ID (e.g., Steam App ID, GOG product ID)
-            store_name: Store name (e.g., "Steam", "GOG")
-            skip_duplicates: If True, skip if game already exists (default: True)
+            initial_status: Initial game status (default: 'Backlog')
+            achievement_percentage: Initial achievement percentage (default: 0)
 
         Returns:
             Tuple of (created: bool, message: str)
         """
-        # Ensure title is properly encoded as UTF-8 string
-        title = str(title).encode('utf-8', errors='replace').decode('utf-8')
+        # Ensure title is a proper string (no need to encode/decode)
+        title = str(title)
 
-        # Check for duplicates if enabled
-        if skip_duplicates:
-            existing_page_id = None
 
-            # First: Try robust check with external_id + store (for new entries)
-            if external_id and store_name:
-                exists, existing_page_id = self.check_game_exists_by_external_id(database_id, external_id, store_name)
-                if exists:
-                    return False, f"Game '{title}' already exists in database (skipped)"
-
-            # Second: Fallback to title-based check (for legacy entries without external_id)
-            exists_by_title, existing_page_id = self.check_game_exists(database_id, title)
-            if exists_by_title:
-                # TRANSITIONAL LOGIC: Update existing entry with external_id if provided
-                if external_id and store_name and existing_page_id:
-                    update_success = self._update_external_id(existing_page_id, external_id, store_name)
-                    if update_success:
-                        return False, f"Game '{title}' already exists, updated with external_id (skipped)"
-                    else:
-                        return False, f"Game '{title}' already exists (skipped, update failed)"
-
-                return False, f"Game '{title}' already exists in database (skipped)"
 
         # Handle release_date - extract string from tuple if needed
         if isinstance(release_date, tuple):
@@ -224,11 +252,11 @@ class NotionIntegration:
         else:
             date_string = release_date  # Already a string
 
-        # Ensure all text fields are UTF-8 encoded
+        # Ensure all text fields are proper strings
         def ensure_utf8(text):
-            """Ensure text is properly UTF-8 encoded"""
+            """Ensure text is a proper string"""
             if isinstance(text, str):
-                return text.encode('utf-8', errors='replace').decode('utf-8')
+                return str(text)
             return text
 
         cleaned_genres = [{'name': ensure_utf8(genre['name'].replace(',', ''))} for genre in genres]
@@ -238,21 +266,19 @@ class NotionIntegration:
         try:
             properties = {
                 'title': {'title': [{'text': {'content': title}}]},
-                'Status': {'select': {'name': "Backlog"}},
+                'Status': {'select': {'name': initial_status}},
                 'Release Date': {'date': {'start': date_string}},
                 'genre': {'multi_select': cleaned_genres},
                 'Console': {'multi_select': cleaned_consoles},
                 'Online': {'multi_select': cleaned_online},
                 'Length': {'number': length},
-                'Store': {'relation': [{'id': related_page_id}]}
+                'Store': {'relation': [{'id': related_page_id}]},
+                'External ID': {'rich_text': [{'text': {'content': ensure_utf8(str(external_id))}}]}
             }
 
-            # Add external_id and store_name as rich_text properties if provided
-            if external_id:
-                properties['External ID'] = {'rich_text': [{'text': {'content': ensure_utf8(str(external_id))}}]}
-
-            if store_name:
-                properties['Store Name'] = {'rich_text': [{'text': {'content': ensure_utf8(store_name)}}]}
+            # Add achievements if provided
+            if achievement_percentage > 0:
+                properties['Achievements'] = {'number': achievement_percentage}
 
             self.client.pages.create(
                 **{

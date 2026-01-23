@@ -12,7 +12,7 @@ Get your game backlog synced to Notion in 5 minutes!
 
 ### 1. Clone & Install
 ```bash
-git clone https://github.com/Rumpkin/Game-Backlog-Assistant.git
+git clone https://github.com/dpassa/Game-Backlog-Assistant.git
 cd Game-Backlog-Assistant
 pip install -r requirements.txt
 ```
@@ -182,7 +182,7 @@ python run_api_tests.py
 
 ## Support
 
-- Issues: https://github.com/Rumpkin/Game-Backlog-Assistant/issues
+- Issues: https://github.com/dpassa/Game-Backlog-Assistant/issues
 - See documentation links above for detailed guides
 
 ---

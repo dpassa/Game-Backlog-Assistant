@@ -122,7 +122,7 @@ def _print_optimization_stats(sources_used, debug):
             print(f'   IGDB called for: {", ".join(sources_used["igdb"])}')
 
 
-def write_game(notion, game_data, store_integration=None, debug=False):
+def write_game(notion, game_data, store_integration=None, debug=False, game_status='new', page_id=None, existing_data=None):
     """
     Write game to Notion or update existing game, using store data when available.
 
@@ -131,48 +131,66 @@ def write_game(notion, game_data, store_integration=None, debug=False):
         game_data: Normalized game dictionary from store integration
         store_integration: Store integration instance (SteamIntegration, GogIntegration, etc.)
         debug: Enable debug output
+        game_status: Pre-computed status ('completed', 'exists', 'new') from lookup
+        page_id: Pre-computed page_id for existing games
+        existing_data: Existing game data from Notion lookup (for comparison)
 
     Returns:
         str: Status - 'added', 'updated', 'skipped', or 'error'
     """
     title = game_data['name']
     external_id = game_data.get('external_id', '')
-    store_relation_id = game_data.get('notion_store_id', '')
 
-    # Check if game already exists in Notion
-    exists, page_id = notion.check_game_exists_by_external_id(
-        NOTION_DATABASE_ID,
-        external_id,
-        store_relation_id
-    ) if external_id and store_relation_id else (False, None)
+    # Handle completed games - should be skipped before reaching here, but included for safety
+    if game_status == 'completed':
+        print(f'Skipping {title} (already Complete)')
+        return 'skipped'
 
-    if exists:
-        print(f'--- Updating {title} ---')
-        # Game exists - update status and achievements if not complete
+    if game_status == 'exists':
+        print(f'--- Checking {title} ---')
+        # Game exists - update status and achievements only if changed
         try:
-            # Get current status from Notion to check if already complete
-            # For now, we'll attempt to update all existing games
-
             # Fetch enriched data from store (achievements, status)
             if store_integration and hasattr(store_integration, 'get_enriched_game_data'):
                 enriched_data = store_integration.get_enriched_game_data(external_id)
 
                 if enriched_data:
-                    achievement_pct = enriched_data.get('achievement_percentage', 0)
+                    new_achievement_pct = enriched_data.get('achievement_percentage', 0)
                     new_status = enriched_data.get('status', 'Backlog')
 
-                    print(f'📊 Achievements: {achievement_pct}%')
-                    print(f'🎯 Status: {new_status}')
+                    # Get existing values from Notion lookup
+                    existing_status = existing_data.get('status', '') if existing_data else ''
+                    existing_achievements = existing_data.get('achievements', 0) if existing_data else 0
+
+                    # Compare with existing data - skip if no changes
+                    status_changed = new_status != existing_status
+                    achievements_changed = new_achievement_pct != existing_achievements
+
+                    if debug:
+                        print(f'  Existing: status={existing_status}, achievements={existing_achievements}%')
+                        print(f'  New: status={new_status}, achievements={new_achievement_pct}%')
+
+                    if not status_changed and not achievements_changed:
+                        print(f'⊘ No changes detected, skipping update')
+                        return 'skipped'
+
+                    # Log what changed
+                    changes = []
+                    if status_changed:
+                        changes.append(f'status: {existing_status} → {new_status}')
+                    if achievements_changed:
+                        changes.append(f'achievements: {existing_achievements}% → {new_achievement_pct}%')
+                    print(f'📝 Changes: {", ".join(changes)}')
 
                     # Update Notion with new status and achievements
                     success, message = notion.update_game_status_and_achievements(
                         page_id,
                         status=new_status,
-                        achievement_percentage=achievement_pct
+                        achievement_percentage=new_achievement_pct
                     )
 
                     if success:
-                        print(f'✓ Game Updated: {message}')
+                        print(f'✓ Game Updated')
                         return 'updated'
                     else:
                         print(f'⚠ Update failed: {message}')
@@ -188,7 +206,7 @@ def write_game(notion, game_data, store_integration=None, debug=False):
             print(f'✗ Error updating: {e}')
             return 'error'
 
-    else:
+    else:  # game_status == 'new'
         print(f'--- Adding {title} ---')
         # Game doesn't exist - add it with full details
         sources_used = {'store': [], 'igdb': []}
@@ -310,26 +328,178 @@ def _fetch_all_games(integrations):
     return games, game_to_integration
 
 
-def _process_game(notion, game, game_to_integration, debug):
+def _normalize_notion_id(notion_id):
+    """
+    Normalize Notion ID by removing dashes for consistent comparison.
+
+    Notion IDs can be returned in different formats:
+    - With dashes: 12345678-1234-1234-1234-123456789abc
+    - Without dashes: 123456781234123412341234567890abc
+
+    Args:
+        notion_id: Notion page/database ID
+
+    Returns:
+        Normalized ID without dashes (lowercase)
+    """
+    if not notion_id:
+        return ''
+    return str(notion_id).replace('-', '').lower()
+
+
+def _build_notion_game_lookup(notion, database_id):
+    """
+    Pre-fetch all games from Notion and build lookup structures.
+
+    This optimization reduces N individual API queries to a single paginated query,
+    significantly reducing API calls when processing large game libraries.
+
+    Args:
+        notion: NotionIntegration instance
+        database_id: Notion database ID
+
+    Returns:
+        Tuple of:
+        - lookup_dict: Dict mapping (external_id, normalized_store_id) -> game_data
+        - completed_keys: Set of (external_id, normalized_store_id) tuples for completed games
+    """
+    try:
+        print("Pre-fetching all games from Notion...")
+        all_games = notion.get_all_games(database_id)
+        print(f"Retrieved {len(all_games)} games from Notion")
+
+        lookup_dict = {}
+        completed_keys = set()
+
+        for game in all_games:
+            external_id = game.get('external_id', '')
+            store_id = _normalize_notion_id(game.get('store_id', ''))
+            status = game.get('status', '')
+            achievements = game.get('achievements', 0)
+
+            if external_id and store_id:
+                key = (external_id, store_id)
+                lookup_dict[key] = game
+
+                # Consider complete if status is "Complete" OR achievements are 100%
+                if status == 'Complete' or achievements == 100:
+                    completed_keys.add(key)
+
+        print(f"Lookup stats: {len(lookup_dict)} indexed, {len(completed_keys)} completed")
+
+        # Debug: show sample keys for verification
+        if lookup_dict:
+            sample_keys = list(lookup_dict.keys())[:3]
+            print(f"Sample lookup keys: {sample_keys}")
+
+        return lookup_dict, completed_keys
+
+    except Exception as e:
+        print(f"Warning: Could not pre-fetch Notion games: {e}")
+        print("Falling back to per-game lookup (slower)")
+        return {}, set()
+
+
+def _check_game_in_lookup(game_data, lookup_dict, completed_keys, debug=False):
+    """
+    Check game status using pre-built lookup structures.
+
+    Provides O(1) lookup instead of individual API calls for each game.
+
+    Args:
+        game_data: Normalized game from store integration
+        lookup_dict: Pre-built (external_id, normalized_store_id) -> game_data dict
+        completed_keys: Set of completed game keys
+        debug: Enable debug output for key matching
+
+    Returns:
+        Tuple of (status, page_id):
+        - ('completed', page_id): Game is complete, skip entirely
+        - ('exists', page_id): Game exists but not complete, update needed
+        - ('new', None): Game doesn't exist, add it
+    """
+    external_id = game_data.get('external_id', '')
+    store_id = _normalize_notion_id(game_data.get('notion_store_id', ''))
+
+    if not external_id or not store_id:
+        if debug:
+            print(f"  DEBUG: Missing external_id={external_id} or store_id={store_id}")
+        return ('new', None)
+
+    key = (external_id, store_id)
+
+    if debug:
+        print(f"  DEBUG: Looking for key {key}")
+
+    if key in completed_keys:
+        page_id = lookup_dict[key].get('page_id')
+        return ('completed', page_id)
+
+    if key in lookup_dict:
+        page_id = lookup_dict[key].get('page_id')
+        return ('exists', page_id)
+
+    if debug:
+        # Show similar keys that might match
+        similar = [k for k in lookup_dict.keys() if k[0] == external_id]
+        if similar:
+            print(f"  DEBUG: Found similar external_id but different store: {similar}")
+
+    return ('new', None)
+
+
+def _process_game(notion, game, game_to_integration, lookup_dict, completed_keys, debug):
     """
     Process a single game and write to Notion.
+
+    Args:
+        notion: NotionIntegration instance
+        game: Normalized game data from store
+        game_to_integration: Mapping of game keys to store integrations
+        lookup_dict: Pre-built Notion game lookup
+        completed_keys: Set of completed game keys
+        debug: Enable debug output
 
     Returns:
         str: Status - 'added', 'updated', 'skipped', or 'error'
     """
+    # Check game status using pre-built lookup (O(1) operation)
+    game_status, page_id = _check_game_in_lookup(game, lookup_dict, completed_keys, debug)
+
+    # Skip completed games entirely - no store API calls needed!
+    if game_status == 'completed':
+        print(f'Skipping {game.get("name", "Unknown")} (Complete)')
+        return 'skipped'
+
+    # Get existing data from lookup for comparison (avoids unnecessary Notion updates)
+    external_id = game.get('external_id', '')
+    store_id = _normalize_notion_id(game.get('notion_store_id', ''))
+    lookup_key = (external_id, store_id)
+    existing_data = lookup_dict.get(lookup_key)
+
     # Get the store integration for this game
-    game_key = f"{game.get('external_id', '')}_{game.get('store_name', '')}"
+    game_key = f"{external_id}_{game.get('store_name', '')}"
     store_integration = game_to_integration.get(game_key)
 
-    return write_game(notion, game, store_integration=store_integration, debug=debug)
+    return write_game(
+        notion, game,
+        store_integration=store_integration,
+        debug=debug,
+        game_status=game_status,
+        page_id=page_id,
+        existing_data=existing_data
+    )
 
 
 def main(debug=False):
     """
     Main entry point for syncing games to Notion.
 
-    This function now handles both adding new games and updating existing ones
-    with status and achievement data.
+    Optimized flow:
+    1. Pre-fetch all games from Notion (single paginated query)
+    2. Build lookup structures for fast existence checking
+    3. Fetch games from store APIs
+    4. Process games: skip completed, update existing, add new
 
     Args:
         debug: Enable debug output (default: False)
@@ -341,37 +511,63 @@ def main(debug=False):
         print("Please set up Steam or GOG credentials in .env file.")
         return
 
+    notion = NotionIntegration(NOTION_TOKEN)
+
+    # OPTIMIZATION: Pre-fetch all Notion games BEFORE store API calls
+    lookup_dict, completed_keys = _build_notion_game_lookup(notion, NOTION_DATABASE_ID)
+
+    # Now fetch from store APIs
     games, game_to_integration = _fetch_all_games(integrations)
 
     if not games:
         print("No games found in any library.")
         return
 
-    print(f"\nTotal games to process: {len(games)}")
-    print("🚀 Processing games (unified add/update mode)\n")
+    # Calculate actual work needed before processing
+    new_count = 0
+    update_count = 0
+    skip_count = 0
 
-    notion = NotionIntegration(NOTION_TOKEN)
+    for game in games:
+        status, _ = _check_game_in_lookup(game, lookup_dict, completed_keys)
+        if status == 'completed':
+            skip_count += 1
+        elif status == 'exists':
+            update_count += 1
+        else:
+            new_count += 1
+
+    print(f"\nProcessing Summary:")
+    print(f"  Total from stores: {len(games)}")
+    print(f"  Complete (skip): {skip_count}")
+    print(f"  Existing (update): {update_count}")
+    print(f"  New (add): {new_count}")
+    print(f"  API calls saved: {skip_count}")
+    print("\nProcessing games (optimized mode)\n")
 
     # Track statistics
     stats = {'added': 0, 'updated': 0, 'skipped': 0, 'errors': 0}
 
-    # Process each game
+    # Process each game with optimized lookup
     for i, game in enumerate(games, 1):
         print(f"\n[{i}/{len(games)}]", end=' ')
 
         try:
-            status = _process_game(notion, game, game_to_integration, debug)
+            status = _process_game(
+                notion, game, game_to_integration,
+                lookup_dict, completed_keys, debug
+            )
             stats[status] = stats.get(status, 0) + 1
 
         except Exception as e:
-            print(f"❌ Error processing {game.get('name', 'unknown')}: {e}")
+            print(f"Error processing {game.get('name', 'unknown')}: {e}")
             stats['errors'] += 1
             if debug:
                 import traceback
                 traceback.print_exc()
 
     print("\n" + "="*60)
-    print("✓ Sync completed!")
+    print("Sync completed!")
     print("="*60)
     print(f"Added: {stats['added']} | Updated: {stats['updated']} | Skipped: {stats['skipped']} | Errors: {stats['errors']}")
 

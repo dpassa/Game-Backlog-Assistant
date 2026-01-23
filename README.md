@@ -82,30 +82,8 @@ Automatically sync your gaming library from Steam, GOG, and other stores to a be
 3. Manage that application and take note of the Client ID and Client Secret for later use
 
 ## Installation
-1. Clone this repository:
-
-```
-git clone https://github.com/Rumpkin/Game-Backlog-Assistant.git
-cd Game-Backlog-Assistant
-```
-
-2. Install the required dependencies:
-```
-pip install -r requirements.txt
-```
-3. Set up your environment variables:
-
-- Open the secrets.json file in the project root directory
-- Add the following environment variables as requested
-- Example:
-```
-{
-    "notion_token" : "YourNotionToken",    
-    "notion_database_id" : "Notion_Database_ID",
-    "IGDB_clientID" : "IGDB_ClientID",
-    "IGDB_secret" : "IGDB_Secret"
-}
-```
+Refer to quick start guide
+- **[Quick Start Guide](docs/01_QUICK_START.md)** - 5-minute setup for new users
 
 ### Not sure how to find an environment variable look below 
 

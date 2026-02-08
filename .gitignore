@@ -18,3 +18,4 @@ coverage-reports/
 
 # Claude Code
 .claude
+.mcp.json
